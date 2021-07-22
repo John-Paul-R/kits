@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+  "name": "${name}",
+  "description": "Lorem ipsum dolor sit amet",
+  "authors": [
+    {
+      "name": "John Paul R.",
+      "contact": {
+        "homepage": "https://www.jpcode.dev",
+        "discord": "https://discord.jpcode.dev"
+      }
+    }
+  ],
+  "contact": {
+    "homepage": "https://github.com/John-Paul-R/fabric-template-mod",
+    "sources": "https://github.com/John-Paul-R/fabric-template-mod",
+    "issues": "https://github.com/John-Paul-R/fabric-template-mod/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/modid/icon.jpg",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.jpcode.modid.Example"
+    ]
+  },
+  "mixins": [
+    "modid.mixins.json"
+  ],
+  "depends": {
+    "java": ">=16",
+    "minecraft": "1.17.x",
+    "fabricloader": ">=0.11.3",
+    "fabric": "*"
+  },
+  "recommends": {
+    "modid-sub": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}

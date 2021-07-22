@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Wiki
+    url: https://github.com/John-Paul-R/fabric-template-mod/wiki
+    about: Find guides related to using the mod here
+  - name: GitHub Discussions
+    url: https://github.com/John-Paul-R/fabric-template-mod/discussions
+    about: Ask and answer any questions regarding the mod here
+  - name: Join Discord
+    url: https://discord.jpcode.dev/
+    about: A place for questions & discussion about this mod and others by @John-Paul-R
+  - name: About Fabric
+    url: https://fabricmc.net/
+    about: Find information regarding the Fabric mod loader here
