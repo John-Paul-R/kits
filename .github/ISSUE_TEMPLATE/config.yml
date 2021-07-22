@@ -1,10 +1,10 @@
 blank_issues_enabled: true
 contact_links:
   - name: Wiki
-    url: https://github.com/John-Paul-R/fabric-template-mod/wiki
+    url: https://github.com/John-Paul-R/kits/wiki
     about: Find guides related to using the mod here
   - name: GitHub Discussions
-    url: https://github.com/John-Paul-R/fabric-template-mod/discussions
+    url: https://github.com/John-Paul-R/kits/discussions
     about: Ask and answer any questions regarding the mod here
   - name: Join Discord
     url: https://discord.jpcode.dev/

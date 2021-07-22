@@ -3,7 +3,7 @@
   "id": "${id}",
   "version": "${version}",
   "name": "${name}",
-  "description": "Lorem ipsum dolor sit amet",
+  "description": "Permissions-based player kits for Fabric Servers.",
   "authors": [
     {
       "name": "John Paul R.",
@@ -14,20 +14,20 @@
     }
   ],
   "contact": {
-    "homepage": "https://github.com/John-Paul-R/fabric-template-mod",
-    "sources": "https://github.com/John-Paul-R/fabric-template-mod",
-    "issues": "https://github.com/John-Paul-R/fabric-template-mod/issues"
+    "homepage": "https://github.com/John-Paul-R/kits",
+    "sources": "https://github.com/John-Paul-R/kits",
+    "issues": "https://github.com/John-Paul-R/kits/issues"
   },
   "license": "MIT",
-  "icon": "assets/modid/icon.jpg",
+  "icon": "assets/kits/icon.jpg",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.jpcode.modid.Example"
+      "dev.jpcode.kits.Kits"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "kits.mixins.json"
   ],
   "depends": {
     "java": ">=16",
@@ -36,9 +36,7 @@
     "fabric": "*"
   },
   "recommends": {
-    "modid-sub": "*"
   },
   "suggests": {
-    "modmenu": "*"
   }
 }

@@ -24,6 +24,6 @@ build:
   - '**/settings.gradle'
   - '.github/workflows/build.yml'
 
-# Add 'modid' labels for changes to their respective codebases
-#modid: 'src/**/*'
-#modid-sub: 'example-submod/**/*'
+# Add 'kits' labels for changes to their respective codebases
+#kits: 'src/**/*'
+#kits-sub: 'example-submod/**/*'

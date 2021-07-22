@@ -108,7 +108,7 @@ task modrinth(type: TaskModrinthUpload) {
     Map env = getenv()
     onlyIf {
         // Only attempt to run this task if the MODRINTH variable is set in .env, otherwise SKIP it
-        env.containsKey("MODRINTH")
+        env.containsKey("MODRINTH_TOKEN")
     }
     // Set the API token from the environment
     token = env.get('MODRINTH_TOKEN')
