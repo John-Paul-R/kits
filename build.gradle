@@ -37,6 +37,10 @@ allprojects {
         testImplementation "org.junit.jupiter:junit-jupiter-api:${project.junit_jupiter_version}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${project.junit_jupiter_version}"
 
+        // JiJ Dependencies
+        modApi 	"me.lucko:fabric-permissions-api:${project.permissions_api_version}"
+        include	"me.lucko:fabric-permissions-api:${project.permissions_api_version}"
+
         // Subprojects
         subprojects.each {
             implementation project(":${it.name}")

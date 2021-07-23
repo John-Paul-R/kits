@@ -1,17 +1,20 @@
 package dev.jpcode.kits;
 
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
-public class ListSuggestion {
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+
+public final class ListSuggestion {
+
+    private ListSuggestion() {}
+
     public static CompletableFuture<Suggestions> getSuggestionsBuilder(SuggestionsBuilder builder, List<String> list) {
         String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
 
-        if(list.isEmpty()) { // If the list is empty then return no suggestions
+        if (list.isEmpty()) { // If the list is empty then return no suggestions
             return Suggestions.empty(); // No suggestions
         }
 

@@ -20,7 +20,7 @@
   <module name="FileLength"/>
   <module name="LineLength">
     <property name="fileExtensions" value="java"/>
-    <property name="max" value="120"/>
+    <property name="max" value="200"/>
   </module>
 
   <!-- Checks for whitespace                             -->
@@ -50,10 +50,9 @@
 
     <!-- Checks for imports                             -->
     <!-- See https://checkstyle.org/config_imports.html -->
-    <module name="AvoidStarImport"/>
+<!--    <module name="AvoidStarImport"/>-->
     <module name="IllegalImport"/>
     <module name="ImportOrder">
-      <!-- todo: replace 'com.example' import group -->
       <property name="groups" value="java,javax,*,com.mojang,net.minecraft,net.fabricmc,dev.jpcode"/>
       <property name="separated" value="true"/>
       <property name="option" value="bottom"/>
@@ -108,10 +107,10 @@
 
     <!-- Checks for K&R brace styling                                  -->
     <!-- See https://en.wikipedia.org/wiki/Indentation_style#K&R_style -->
-    <module name="LeftCurly"> <!-- braces on new line for class structure -->
-      <property name="option" value="nl"/>
-      <property name="tokens" value="ANNOTATION_DEF,CLASS_DEF,CTOR_DEF,ENUM_DEF,INTERFACE_DEF,METHOD_DEF,OBJBLOCK,RECORD_DEF"/>
-    </module>
+<!--    <module name="LeftCurly"> &lt;!&ndash; braces on new line for class structure &ndash;&gt;-->
+<!--      <property name="option" value="nl"/>-->
+<!--      <property name="tokens" value="ANNOTATION_DEF,CLASS_DEF,CTOR_DEF,ENUM_DEF,INTERFACE_DEF,METHOD_DEF,OBJBLOCK,RECORD_DEF"/>-->
+<!--    </module>-->
     <module name="LeftCurly"> <!-- braces at end of line within blocks -->
       <property name="option" value="eol"/>
       <property name="tokens" value="ENUM_CONSTANT_DEF,LAMBDA,LITERAL_CASE,LITERAL_CATCH,LITERAL_DEFAULT,LITERAL_DO,LITERAL_ELSE,LITERAL_FINALLY,LITERAL_FOR,LITERAL_IF,LITERAL_SWITCH,LITERAL_SYNCHRONIZED,LITERAL_TRY,LITERAL_WHILE,STATIC_INIT,COMPACT_CTOR_DEF"/>
@@ -166,8 +165,8 @@
     <module name="OperatorWrap"/>
     <module name="ParenPad"/>
     <module name="SingleSpaceSeparator"/>
-    <module name="TypecastParenPad"/>
-    <module name="WhitespaceAfter"/>
+<!--    <module name="TypecastParenPad"/>-->
+<!--    <module name="WhitespaceAfter"/>-->
     <module name="WhitespaceAround">
       <property name="allowEmptyCatches" value="true"/>
       <property name="allowEmptyConstructors" value="true"/>
@@ -180,7 +179,7 @@
     <!-- Miscellaneous checks                        -->
     <!-- See https://checkstyle.org/config_misc.html -->
     <module name="ArrayTypeStyle"/>
-    <module name="CommentsIndentation"/>
+<!--    <module name="CommentsIndentation"/>-->
     <module name="Indentation"/>
     <module name="OuterTypeFilename"/>
     <module name="TodoComment"/>

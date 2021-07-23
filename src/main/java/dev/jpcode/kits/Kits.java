@@ -26,15 +26,22 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 public class Kits implements ModInitializer
 {
     public static final Logger LOGGER = LogManager.getLogger("kits");
-    public static final Map<String, PlayerInventory> kitMap = new HashMap<>();
+    public static final Map<String, Kit> KIT_MAP = new HashMap<String, Kit>();
+    private static File kitsDir;
+
+    public static File getKitsDir() {
+        return kitsDir;
+    }
 
     @Override
     public void onInitialize()
     {
         LOGGER.info("Kits is getting ready...");
 
+        KitPerms.init();
+
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-            File kitsDir = server.getRunDirectory().toPath().resolve("config/kits").toFile();
+            kitsDir = server.getRunDirectory().toPath().resolve("config/kits").toFile();
             // if the dir was not just created, load all kits from dir.
             if (!kitsDir.mkdir()) {
                 File[] kitFiles = kitsDir.listFiles();
@@ -43,10 +50,12 @@ public class Kits implements ModInitializer
                         LOGGER.info(String.format("Loading kit '%s'", kitFile.getName()));
                         NbtCompound kitNbt = NbtIo.read(kitFile);
                         PlayerInventory kitInventory = new PlayerInventory(null);
-                        assert kitNbt!=null;
+
+                        assert kitNbt != null;
                         kitInventory.readNbt(kitNbt.getList("inventory", NbtElement.COMPOUND_TYPE));
                         String fileName = kitFile.getName();
-                        kitMap.put(fileName.substring(0, fileName.length()-4), kitInventory);
+                        String kitName = fileName.substring(0, fileName.length() - 4);
+                        KIT_MAP.put(kitName, new Kit(kitInventory, true, 60));
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (NullPointerException e) {
@@ -56,13 +65,23 @@ public class Kits implements ModInitializer
             }
         });
 
-        CommandRegistrationCallback.EVENT.register(((dispatcher, dedicated) -> {
-            KitsCommandRegistry.register(dispatcher, dedicated, kitMap);
-        }));
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+            KitsCommandRegistry.register(dispatcher, dedicated, KIT_MAP);
+        });
     }
 
+    /**
+     * Suggests existing kits that the user has permissions for.
+     *
+     * @param context
+     * @param builder
+     * @return suggestions for existing kits that the user has permissions for.
+     */
     public static CompletableFuture<Suggestions> suggestionProvider(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
-        return ListSuggestion.getSuggestionsBuilder(builder, kitMap.keySet().stream().toList());
+        ServerCommandSource source = context.getSource();
+        return ListSuggestion.getSuggestionsBuilder(builder, KIT_MAP.keySet().stream().filter(kitName ->
+            KitPerms.checkKit(source, kitName)
+        ).toList());
     }
 
 }
