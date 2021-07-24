@@ -23,7 +23,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.jpcode.kits.Kits"
+      "dev.jpcode.kits.KitsMod"
     ]
   },
   "mixins": [

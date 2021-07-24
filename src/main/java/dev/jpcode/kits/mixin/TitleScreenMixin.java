@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.gui.screen.TitleScreen;
 
-import static dev.jpcode.kits.Kits.LOGGER;
+import static dev.jpcode.kits.KitsMod.LOGGER;
 
 @Mixin(TitleScreen.class)
 public class TitleScreenMixin

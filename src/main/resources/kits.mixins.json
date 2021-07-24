@@ -3,7 +3,10 @@
   "minVersion": "0.8",
   "package": "dev.jpcode.kits.mixin",
   "compatibilityLevel": "JAVA_16",
-  "mixins": [],
+  "mixins": [
+    "PlayerManagerMixin",
+    "ServerPlayerEntityMixin"
+  ],
   "server": [],
   "client": [
     "TitleScreenMixin"
