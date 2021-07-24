@@ -7,11 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import net.minecraft.server.MinecraftServer;
-
-import net.minecraft.util.WorldSavePath;
-import net.minecraft.world.World;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,7 +18,9 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.util.WorldSavePath;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
@@ -39,6 +36,7 @@ public class KitsMod implements ModInitializer
     public static File getKitsDir() {
         return kitsDir;
     }
+
     public static Path getUserDataDirDir() {
         return userDataDir;
     }

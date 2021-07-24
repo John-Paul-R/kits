@@ -1,10 +1,10 @@
 package dev.jpcode.kits;
 
+import java.io.File;
+
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
-
-import java.io.File;
 
 public abstract class PlayerData extends PersistentState {
 

@@ -3,8 +3,6 @@ package dev.jpcode.kits;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import dev.jpcode.kits.access.ServerPlayerEntityAccess;
-
 import me.lucko.fabric.api.permissions.v0.Permissions;
 
 import com.mojang.brigadier.CommandDispatcher;
@@ -20,6 +18,8 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
+
+import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
 import static dev.jpcode.kits.InventoryUtil.addAllCopies;
 import static dev.jpcode.kits.InventoryUtil.offerAllCopies;
@@ -96,7 +96,6 @@ public final class KitsCommandRegistry {
                     PlayerInventory playerInventory = context.getSource().getPlayer().getInventory();
                     playerData.useKit(kitName);
                     offerAllCopies(kit.inventory(), playerInventory);
-
 
                     context.getSource().sendFeedback(
                         Text.of(String.format("Succesfully claimed kit '%s'!", kitName)),

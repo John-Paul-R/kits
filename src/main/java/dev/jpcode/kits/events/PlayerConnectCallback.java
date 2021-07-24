@@ -12,7 +12,7 @@ public interface PlayerConnectCallback {
             for (PlayerConnectCallback event : listeners) {
                 event.onPlayerConnect(connection, player);
             }
-    });
+        });
 
     void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player);
 }

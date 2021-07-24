@@ -3,11 +3,10 @@ package dev.jpcode.kits;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 
-import dev.jpcode.kits.access.ServerPlayerEntityAccess;
-
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.events.PlayerConnectCallback;
 import dev.jpcode.kits.events.PlayerLeaveCallback;
 import dev.jpcode.kits.events.PlayerRespawnCallback;
@@ -15,15 +14,15 @@ import dev.jpcode.kits.events.PlayerRespawnCallback;
 public class PlayerDataManager {
 
     private final LinkedHashMap<UUID, PlayerKitData> dataMap;
-    private static PlayerDataManager INSTANCE;
+    private static PlayerDataManager instance;
 
     public PlayerDataManager() {
-        INSTANCE = this;
+        instance = this;
         this.dataMap = new LinkedHashMap<>();
     }
 
     public static PlayerDataManager getInstance() {
-        return INSTANCE;
+        return instance;
     }
 
     static {
@@ -33,13 +32,13 @@ public class PlayerDataManager {
     }
 
     public static void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player) {
-        PlayerKitData playerData = INSTANCE.addPlayer(player);
+        PlayerKitData playerData = instance.addPlayer(player);
         ((ServerPlayerEntityAccess) player).kits$setPlayerData(playerData);
     }
 
     public static void onPlayerLeave(ServerPlayerEntity player) {
         // Auto-saving should be handled by WorldSaveHandlerMixin. (PlayerData saves when MC server saves players)
-        INSTANCE.unloadPlayerData(player);
+        instance.unloadPlayerData(player);
     }
 
     private static void onPlayerRespawn(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {
