@@ -39,7 +39,7 @@ public final class PlayerKitDataFactory {
         File playerDataFile = null;
         try {
             try {
-                dataDirectoryPath = Files.createDirectories(KitsMod.getUserDataDirDir().resolve(player.getUuidAsString() + ".nbt"));
+                dataDirectoryPath = Files.createDirectories(KitsMod.getUserDataDirDir());
             } catch (NullPointerException e) {
                 dataDirectoryPath = Files.createDirectories(Paths.get("./world/modplayerdata/"));
                 KitsMod.LOGGER.log(Level.WARN, "Session save path could not be found. Defaulting to ./world/modplayerdata");

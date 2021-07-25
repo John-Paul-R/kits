@@ -43,7 +43,8 @@ public class PlayerKitData extends PlayerData {
 
     @Override
     public void fromNbt(NbtCompound nbtCompound) {
-        NbtCompound kitUsedTimesNbt = nbtCompound.getCompound("kitUsedTimes");
+        NbtCompound dataTag = nbtCompound.getCompound("data");
+        NbtCompound kitUsedTimesNbt = dataTag.getCompound("kitUsedTimes");
         for (String key : kitUsedTimesNbt.getKeys()) {
             this.kitUsedTimes.put(key, kitUsedTimesNbt.getLong(key));
         }
