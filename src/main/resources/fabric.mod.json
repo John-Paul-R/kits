@@ -19,7 +19,7 @@
     "issues": "https://github.com/John-Paul-R/kits/issues"
   },
   "license": "MIT",
-  "icon": "assets/kits/icon.jpg",
+  "icon": "assets/kits/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt="Kits Icon" src="src/main/resources/assets/kits/icon.jpg" width="128">
+<img alt="Kits Icon" src="src/main/resources/assets/kits/icon.png" width="128">
 
 # Kits
 
