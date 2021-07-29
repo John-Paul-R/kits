@@ -16,23 +16,59 @@ Permissions-based player kits for Fabric Servers.
 
 </div>
 
-Kits is a **Minecraft mod** that lorem ipsum dolor sit amet. Ut mi lectus,
-egestas a justo nec, hendrerit tempus ipsum. Nulla blandit porta sodales. Nulla
-accumsan ipsum vitae tortor facilisis, id malesuada enim sagittis.
+Kits is a **Minecraft mod** for [Fabric][fabric] servers that adds configurable,
+permissions-based player kits. This allows server owners to easily set up
+batches of items that their players can claim, depending on their rank.
+Additionally, kits can have a predefined cooldown, so that players do not get to
+use them infinitely.
 
-It is built on the [Fabric][fabric] mod loader and is available for modern
-versions of [Minecraft][minecraft] Java Edition.
+**Compatible with LuckPerms**
 
-## Extended Description
+## Usage
 
-Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
-doloremque laudantium.
+### Adding Kits
 
-### Desc 1
+Command: `/kit add <kit_name> <cooldown_milliseconds>`\
+Requires Permission: `kits.manage`
 
-  - totam rem aperiam, eaque ipsa
-  - quae ab illo inventore
-  - veritatis et quasi architecto beatae
+To add a kit, simply place the items you would like to be included in this kit
+anywhere in your inventory and run the command `/kit add`.
+
+### Claiming Kits
+
+Command: `/kit claim <kit_name>`\
+Requires Permission: `kits.claim.<kit_name>`
+
+For players, claiming kits is simple. They simply type `/kit claim <kit_name>`.
+If they have permissions to use the specified kit, and that kit is not on
+cooldown for them, they receive the kit in their inventory (or on the ground if
+their inventory is full.)
+
+Brigadier suggestions are enabled, and will only suggest kits the player has
+permissions for.
+
+### Removing Kits
+
+Command: `/kit remove <kit_name>`
+Requires Permission: `kits.manage`
+
+To remove a kit, simply type `/kit remove <kit_name>`. This *irreversibly and
+completely* **deletes** the specified kit from the server, for all users.
+
+## Advanced
+
+### Files
+
+If, for whatever reason, you wish to configure kits manually, instead of using
+the built-in commands, you can do so by modifying the kit files directly.
+
+Kit files are stored in the directory `config/kits` in Minecraft's NBT format.
+You can modify and create such files with a tool like [NBTExplorer](nbtexp).
+
+This allows you to modify kit contents or cooldowns after creation, or even add
+entirely new kits.
+
+---
 
 ## Contributing
 
@@ -41,15 +77,13 @@ Thank you for considering contributing to Kits! Please see the
 
 ## Licence
 
-<!-- todo: see https://choosealicense.com -->
 Kits is open-sourced software licenced under the [MIT license][licence].
 
 ## Discord
 
 Questions? Contact me in [my Discord server][discord].
 
-[![CC0 Badge](https://i.creativecommons.org/p/zero/1.0/88x31.png)](https://creativecommons.org/publicdomain/zero/1.0/)
-
+[nbtexp]: https://github.com/jaquadro/NBTExplorer
 [contributing]: .github/CONTRIBUTING.md
 [curseforge]: https://curseforge.com/minecraft/mc-mods/kits
 [curseforge:files]: https://www.curseforge.com/minecraft/mc-mods/kits/files/all
