@@ -70,7 +70,16 @@ public final class KitsCommandRegistry {
                         StringArgumentType.getString(context, "kit_name"),
                         context.getSource().getPlayer().getInventory(),
                         LongArgumentType.getLong(context, "cooldown")
-                    )))
+                    ))
+                    .then(argument("time_unit", StringArgumentType.word())
+                        .suggests(TimeUtil::suggestions)
+                        .executes(context -> addKit(
+                            context,
+                            StringArgumentType.getString(context, "kit_name"),
+                            context.getSource().getPlayer().getInventory(),
+                            TimeUtil.parseToMillis(LongArgumentType.getLong(context, "cooldown"), StringArgumentType.getString(context, "time_unit"))
+                        ))))
+
             ).build()
         );
 
@@ -89,7 +98,7 @@ public final class KitsCommandRegistry {
                         context.getSource().sendError(Text.of("Insufficient permissions for specified kit."));
                         return -1;
                     } else if (remainingTime > 0) {
-                        context.getSource().sendError(Text.of(String.format("Specified kit is on cooldown. %sms remaining.", remainingTime)));
+                        context.getSource().sendError(Text.of(String.format("Specified kit is on cooldown. %s remaining.", TimeUtil.formatTime(remainingTime))));
                         return -2;
                     }
 

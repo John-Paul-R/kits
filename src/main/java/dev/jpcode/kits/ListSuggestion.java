@@ -1,6 +1,6 @@
 package dev.jpcode.kits;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
@@ -11,16 +11,16 @@ public final class ListSuggestion {
 
     private ListSuggestion() {}
 
-    public static CompletableFuture<Suggestions> getSuggestionsBuilder(SuggestionsBuilder builder, List<String> list) {
+    public static CompletableFuture<Suggestions> getSuggestionsBuilder(SuggestionsBuilder builder, Collection<String> suggestions) {
         String remaining = builder.getRemaining().toLowerCase(Locale.ROOT);
 
-        if (list.isEmpty()) { // If the list is empty then return no suggestions
+        if (suggestions.isEmpty()) { // If the suggestions is empty then return no suggestions
             return Suggestions.empty(); // No suggestions
         }
 
-        for (String str : list) { // Iterate through the supplied list
+        for (String str : suggestions) { // Iterate through the supplied suggestions
             if (str.toLowerCase(Locale.ROOT).startsWith(remaining)) {
-                builder.suggest(str); // Add every single entry to suggestions list.
+                builder.suggest(str); // Add every single entry to suggestions suggestions.
             }
         }
         return builder.buildFuture(); // Create the CompletableFuture containing all the suggestions
