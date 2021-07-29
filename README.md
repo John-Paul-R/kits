@@ -58,7 +58,7 @@ completely* **deletes** the specified kit from the server, for all users.
 ## Advanced
 
 **Kits** stores most of its data in `nbt` files, using Minecraft's NBT format.
-You can modify and create such files with a tool like [NBTExplorer](nbtexp).
+You can modify and create such files with a tool like [NBTExplorer][nbtexp].
 
 ### Kit Config Files
 
@@ -73,13 +73,13 @@ entirely new kits.
 ### Player Kit Usage Files
 
 Whenever a player successfully claims a kit, the time at which this kit was
-claimed is recorded in a user-specific file in the directory
-`world/kits_user_data` in a file named `<player_uuid>.nbt`.
+claimed is recorded in a user-specific file named `<player_uuid>.nbt` in the directory
+`world/kits_user_data`.
 
 If you wish to reset or modify when a user can next use a kit that they have
-already claimed, you can edit the time specified here (stored as [milliseconds
-since Epoch](https://www.epochconverter.com/)). To reset all kit cooldowns for a
-given user, simply delete the nbt file that corresponds to them.
+already claimed, you can edit the time specified in this file (stored as
+[milliseconds since Epoch](https://www.epochconverter.com/)). To reset all kit
+cooldowns for a given user, simply delete the nbt file that corresponds to them.
 
 ---
 
