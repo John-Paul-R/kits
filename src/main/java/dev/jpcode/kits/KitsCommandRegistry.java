@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
@@ -31,7 +31,7 @@ public final class KitsCommandRegistry {
 
     private KitsCommandRegistry() {}
 
-    static int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, int cooldown) {
+    static int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, long cooldown) {
         PlayerInventory kitInventory = new PlayerInventory(null);
         addAllCopies(sourceInventory, kitInventory);
         return addKit(context, kitName, new Kit(kitInventory, cooldown));
@@ -64,12 +64,12 @@ public final class KitsCommandRegistry {
         kitNode.addChild(literal("add")
             .requires(Permissions.require("kits.manage"))
             .then(argument("kit_name", StringArgumentType.word())
-                .then(argument("cooldown", IntegerArgumentType.integer(-1))
+                .then(argument("cooldown", LongArgumentType.longArg(-1))
                     .executes(context -> addKit(
                         context,
                         StringArgumentType.getString(context, "kit_name"),
                         context.getSource().getPlayer().getInventory(),
-                        IntegerArgumentType.getInteger(context, "cooldown")
+                        LongArgumentType.getLong(context, "cooldown")
                     )))
             ).build()
         );
@@ -98,7 +98,7 @@ public final class KitsCommandRegistry {
                     offerAllCopies(kit.inventory(), playerInventory);
 
                     context.getSource().sendFeedback(
-                        Text.of(String.format("Succesfully claimed kit '%s'!", kitName)),
+                        Text.of(String.format("Successfully claimed kit '%s'!", kitName)),
                         context.getSource().getMinecraftServer().shouldBroadcastConsoleToOps()
                     );
 

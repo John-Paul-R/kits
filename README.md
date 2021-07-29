@@ -49,7 +49,7 @@ permissions for.
 
 ### Removing Kits
 
-Command: `/kit remove <kit_name>`
+Command: `/kit remove <kit_name>`\
 Requires Permission: `kits.manage`
 
 To remove a kit, simply type `/kit remove <kit_name>`. This *irreversibly and
