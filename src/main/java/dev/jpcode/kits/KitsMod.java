@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import dev.jpcode.kits.config.Config;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,6 +25,8 @@ import net.minecraft.util.WorldSavePath;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+
+import dev.jpcode.kits.config.Config;
 
 public class KitsMod implements ModInitializer
 {

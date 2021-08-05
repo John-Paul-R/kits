@@ -32,7 +32,6 @@ public abstract class PlayerManagerMixin {
         PlayerConnectCallback.EVENT_RETURN.invoker().onPlayerConnect(connection, player);
     }
 
-
     @Inject(method = "remove", at = @At("HEAD"))
     public void onPlayerLeave(ServerPlayerEntity player, CallbackInfo callbackInfo) {
         PlayerLeaveCallback.EVENT.invoker().onPlayerLeave(player);

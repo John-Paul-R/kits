@@ -7,13 +7,12 @@ import com.mojang.authlib.GameProfile;
 
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.UserCache;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.events.PlayerConnectCallback;
 import dev.jpcode.kits.events.PlayerLeaveCallback;
 import dev.jpcode.kits.events.PlayerRespawnCallback;
-
-import net.minecraft.util.UserCache;
 
 public class PlayerDataManager {
 
@@ -40,14 +39,14 @@ public class PlayerDataManager {
         PlayerKitData playerData = instance.addPlayer(player);
         ((ServerPlayerEntityAccess) player).kits$setPlayerData(playerData);
 
-        // Detect 1st-join
-        GameProfile gameProfile = player.getGameProfile();
-        UserCache userCache = player.getServer().getUserCache();
-        GameProfile gameProfile2 = userCache.getByUuid(gameProfile.getId());
-        if (gameProfile2 == null) {
-            // Player is new. Do first-join things...
-
-        }
+//        // Detect 1st-join
+//        GameProfile gameProfile = player.getGameProfile();
+//        UserCache userCache = player.getServer().getUserCache();
+//        GameProfile gameProfile2 = userCache.getByUuid(gameProfile.getId());
+//        if (gameProfile2 == null) {
+//            // Player is new. Do first-join things...
+//
+//        }
 
     }
 

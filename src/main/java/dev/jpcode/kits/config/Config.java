@@ -24,7 +24,9 @@ import dev.jpcode.kits.KitsMod;
 
 import static dev.jpcode.kits.KitsMod.LOGGER;
 
-public class Config {
+public final class Config {
+
+    private Config() {}
 
     private static SortedProperties props;
     private static final String CONFIG_PATH = "./config/kits.properties";
@@ -33,14 +35,14 @@ public class Config {
     public static final Option<String> STARTER_KIT = new Option<>("starter_kit", "", String::valueOf);
 
     static {
-        STARTER_KIT.CHANGE_EVENT.register(KitsMod::setStarterKit);
+        STARTER_KIT.changeEvent.register(KitsMod::setStarterKit);
     }
 
     public static void loadOrCreateProperties() {
         props = new SortedProperties();
         File inFile = new File(CONFIG_PATH);
 
-        try{
+        try {
             boolean fileAlreadyExisted = !inFile.createNewFile();
             if (fileAlreadyExisted) {
                 props.load(new FileReader(inFile));
@@ -66,7 +68,7 @@ public class Config {
     }
 
     public static void storeProperties() {
-        try{
+        try {
             File outFile = new File(CONFIG_PATH);
             FileWriter writer = new FileWriter(outFile);
 
@@ -81,58 +83,60 @@ public class Config {
 
     }
 
-    static final Style defStyle = Style.EMPTY.withFormatting(Formatting.GOLD);
-    static final Style accStyle = Style.EMPTY.withFormatting(Formatting.GREEN);
+    static final Style DEFAULT_STYLE = Style.EMPTY.withFormatting(Formatting.GOLD);
+    static final Style ACCENT_STYLE = Style.EMPTY.withFormatting(Formatting.GREEN);
 
     public static @NotNull Text stateAsText() {
         LiteralText result = new LiteralText("");
         String newLine = "\n";//System.getProperty("line.separator");
 
-        result.append( new LiteralText("Kits Config {").setStyle(defStyle) );
+        result.append(new LiteralText("Kits Config {").setStyle(DEFAULT_STYLE));
         result.append(newLine);
         LiteralText propsText = new LiteralText("");
         result.append(propsText);
 
         //print field names paired with their values
-        for ( Field field : pubFields ) {
+        for (Field field : PUBLIC_FIELDS) {
             try {
                 if (Modifier.isPublic(field.getModifiers())) {
                     propsText.append(fieldAsText(field).append(newLine));
                 }
-            } catch ( IllegalAccessException ex ) {
+            } catch (IllegalAccessException ex) {
                 ex.printStackTrace();
             }
         }
-        result.append(new LiteralText("}").setStyle(accStyle));
+        result.append(new LiteralText("}").setStyle(ACCENT_STYLE));
 
         return result;
 
     }
 
-    private static final List<String> pubFieldNames;
-    private static final List<Field> pubFields;
+    private static final List<String> PUBLIC_FIELD_NAMES;
+    private static final List<Field> PUBLIC_FIELDS;
+
     static {
-        pubFieldNames = Arrays.stream(Config.class.getDeclaredFields())
+        PUBLIC_FIELD_NAMES = Arrays.stream(Config.class.getDeclaredFields())
             .filter(field -> Modifier.isPublic(field.getModifiers()))
             .map(Field::getName)
             .sorted()
             .collect(Collectors.toList());
-        pubFields = Arrays.stream(Config.class.getDeclaredFields())
+        PUBLIC_FIELDS = Arrays.stream(Config.class.getDeclaredFields())
             .filter(field -> Modifier.isPublic(field.getModifiers()))
             .sorted(Comparator.comparing(Field::getName))
             .collect(Collectors.toList());
 
     }
 
-    public static List<String> getPubFieldNames() {
-        return pubFieldNames;
+    public static List<String> getPublicFieldNames() {
+        return PUBLIC_FIELD_NAMES;
     }
 
     private static MutableText fieldAsText(Field field) throws IllegalAccessException {
         return new LiteralText("")
-            .append(new LiteralText(field.getName() + ": ").setStyle(defStyle))
+            .append(new LiteralText(field.getName() + ": ").setStyle(DEFAULT_STYLE))
             .append(new LiteralText(field.get(Config.class).toString()));
     }
+
     public static @Nullable MutableText getFieldValueAsText(String fieldName) throws NoSuchFieldException {
         try {
             return fieldAsText(Config.class.getField(fieldName));

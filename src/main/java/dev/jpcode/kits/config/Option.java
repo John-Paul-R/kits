@@ -13,7 +13,7 @@ public class Option<T> {
     private final ValueParser<T> parser;
     private T value;
 
-    public final Event<Consumer<T>> CHANGE_EVENT = EventFactory.createArrayBacked(Consumer.class,
+    public final Event<Consumer<T>> changeEvent = EventFactory.createArrayBacked(Consumer.class,
         (listeners) -> (newValue) -> {
             for (Consumer<T> event : listeners) {
                 event.accept(newValue);
@@ -37,7 +37,7 @@ public class Option<T> {
         T prevValue = this.value;
         this.value = parser.parseValue(String.valueOf(props.getOrDefault(this.key, String.valueOf(this.defaultValue))));
         if (!this.value.equals(prevValue)) {
-            CHANGE_EVENT.invoker().accept(this.value);
+            changeEvent.invoker().accept(this.value);
         }
         return this;
     }
