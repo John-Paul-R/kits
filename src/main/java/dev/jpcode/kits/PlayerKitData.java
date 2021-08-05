@@ -11,6 +11,7 @@ import net.minecraft.util.Util;
 public class PlayerKitData extends PlayerData {
 
     private Map<String, Long> kitUsedTimes;
+    private boolean hasReceivedStarterKit;
 
     public PlayerKitData(ServerPlayerEntity player, File saveFile) {
         super(player, saveFile);
@@ -38,6 +39,8 @@ public class PlayerKitData extends PlayerData {
 
         nbt.put("kitUsedTimes", kitUsedTimesNbt);
 
+        nbt.putBoolean("hasReceivedStarterKit", this.hasReceivedStarterKit);
+
         return nbt;
     }
 
@@ -48,5 +51,16 @@ public class PlayerKitData extends PlayerData {
         for (String key : kitUsedTimesNbt.getKeys()) {
             this.kitUsedTimes.put(key, kitUsedTimesNbt.getLong(key));
         }
+        this.hasReceivedStarterKit = dataTag.getBoolean("hasReceivedStarterKit");
+    }
+
+    public boolean hasReceivedStarterKit() {
+        return hasReceivedStarterKit;
+    }
+
+    public void setHasReceivedStarterKit(boolean hasReceivedStarterKit) {
+        this.hasReceivedStarterKit = hasReceivedStarterKit;
+        this.markDirty();
+        this.save();
     }
 }

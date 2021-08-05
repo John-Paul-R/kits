@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import dev.jpcode.kits.config.Config;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,12 +35,18 @@ public class KitsMod implements ModInitializer
     private static File kitsDir;
     private static Path userDataDir;
 
+    private static Kit starterKit;
+
     public static File getKitsDir() {
         return kitsDir;
     }
 
     public static Path getUserDataDirDir() {
         return userDataDir;
+    }
+
+    public static Kit getStarterKit() {
+        return starterKit;
     }
 
     @Override
@@ -53,6 +61,8 @@ public class KitsMod implements ModInitializer
         ServerLifecycleEvents.SERVER_STARTING.register(KitsMod::reloadKits);
 
         CommandRegistrationCallback.EVENT.register(KitsCommandRegistry::register);
+
+        Config.loadOrCreateProperties();
 
         LOGGER.info("Kits initialized.");
     }
@@ -84,6 +94,8 @@ public class KitsMod implements ModInitializer
                 }
             }
         }
+
+        setStarterKit(Config.STARTER_KIT.getValue());
     }
 
     /**
@@ -98,6 +110,19 @@ public class KitsMod implements ModInitializer
         return ListSuggestion.getSuggestionsBuilder(builder, KIT_MAP.keySet().stream().filter(kitName ->
             KitPerms.checkKit(source, kitName)
         ).toList());
+    }
+
+    public static void setStarterKit(String s) {
+        if (s == null) {
+            starterKit = null;
+        } else {
+            starterKit = KIT_MAP.get(s);
+            if (starterKit == null) {
+                LOGGER.warn(String.format("Provided starter kit name, '%s' could not be found.", s));
+            } else {
+                LOGGER.info(String.format("Starter kit set to '%s'", s));
+            }
+        }
     }
 
 }

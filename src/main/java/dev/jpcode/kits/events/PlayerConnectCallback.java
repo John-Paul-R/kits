@@ -7,7 +7,13 @@ import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 
 public interface PlayerConnectCallback {
-    Event<PlayerConnectCallback> EVENT = EventFactory.createArrayBacked(PlayerConnectCallback.class,
+    Event<PlayerConnectCallback> EVENT_HEAD = EventFactory.createArrayBacked(PlayerConnectCallback.class,
+        (listeners) -> (connection, player) -> {
+            for (PlayerConnectCallback event : listeners) {
+                event.onPlayerConnect(connection, player);
+            }
+        });
+    Event<PlayerConnectCallback> EVENT_RETURN = EventFactory.createArrayBacked(PlayerConnectCallback.class,
         (listeners) -> (connection, player) -> {
             for (PlayerConnectCallback event : listeners) {
                 event.onPlayerConnect(connection, player);

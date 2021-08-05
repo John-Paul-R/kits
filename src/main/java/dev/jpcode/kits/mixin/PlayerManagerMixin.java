@@ -24,8 +24,14 @@ public abstract class PlayerManagerMixin {
 
     @Inject(method = "onPlayerConnect", at = @At("HEAD"))
     public void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo callbackInfo) {
-        PlayerConnectCallback.EVENT.invoker().onPlayerConnect(connection, player);
+        PlayerConnectCallback.EVENT_HEAD.invoker().onPlayerConnect(connection, player);
     }
+
+    @Inject(method = "onPlayerConnect", at = @At("RETURN"))
+    public void onPlayerConnectTail(ClientConnection connection, ServerPlayerEntity player, CallbackInfo callbackInfo) {
+        PlayerConnectCallback.EVENT_RETURN.invoker().onPlayerConnect(connection, player);
+    }
+
 
     @Inject(method = "remove", at = @At("HEAD"))
     public void onPlayerLeave(ServerPlayerEntity player, CallbackInfo callbackInfo) {
