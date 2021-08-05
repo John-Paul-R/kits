@@ -3,11 +3,8 @@ package dev.jpcode.kits;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 
-import com.mojang.authlib.GameProfile;
-
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.UserCache;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.events.PlayerConnectCallback;
