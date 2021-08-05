@@ -62,8 +62,6 @@ public class KitsMod implements ModInitializer
 
         CommandRegistrationCallback.EVENT.register(KitsCommandRegistry::register);
 
-        Config.loadOrCreateProperties();
-
         LOGGER.info("Kits initialized.");
     }
 
@@ -94,8 +92,7 @@ public class KitsMod implements ModInitializer
                 }
             }
         }
-
-        setStarterKit(Config.STARTER_KIT.getValue());
+        Config.loadOrCreateProperties();
     }
 
     /**
