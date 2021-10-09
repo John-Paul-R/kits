@@ -26,11 +26,16 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
-import dev.jpcode.kits.config.Config;
+import dev.jpcode.kits.config.KitsConfig;
 
 public class KitsMod implements ModInitializer
 {
     public static final Logger LOGGER = LogManager.getLogger("kits");
+    public static final KitsConfig CONFIG = new KitsConfig(
+        Path.of("./config/kits.properties"),
+        "Kits Config",
+        "https://github.com/John-Paul-R/kits/wiki/Basic-Usage"
+    );
     public static final Map<String, Kit> KIT_MAP = new HashMap<String, Kit>();
     private static File kitsDir;
     private static Path userDataDir;
@@ -92,7 +97,7 @@ public class KitsMod implements ModInitializer
                 }
             }
         }
-        Config.loadOrCreateProperties();
+        CONFIG.loadOrCreateProperties();
     }
 
     /**
