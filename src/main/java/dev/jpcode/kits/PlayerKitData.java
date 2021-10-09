@@ -63,4 +63,14 @@ public class PlayerKitData extends PlayerData {
         this.markDirty();
         this.save();
     }
+
+    public void resetKitCooldown(String kitName) {
+        this.kitUsedTimes.remove(kitName);
+        this.markDirty();
+    }
+
+    public void resetAllKits() {
+        this.kitUsedTimes.clear();
+        this.markDirty();
+    }
 }
