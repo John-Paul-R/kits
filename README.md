@@ -55,6 +55,21 @@ Requires Permission: `kits.manage`
 To remove a kit, simply type `/kit remove <kit_name>`. This *irreversibly and
 completely* **deletes** the specified kit from the server, for all users.
 
+### Reset Player Kit Cooldowns
+
+If, as a moderator, you wish to reset a player's kit cooldowns, allowing them to
+regain access to already-claimed kits, you can do so with the following commands:
+
+#### Reset a single kit
+
+Command: `/kit resetPlayerKit <player> <kit_name>`\
+Requires Permission: `kits.manage`
+
+#### Reset all kits
+
+Command: `/kit resetPlayer <player>`\
+Requires Permission: `kits.manage`
+
 ## Advanced
 
 **Kits** stores most of its data in `nbt` files, using Minecraft's NBT format.
