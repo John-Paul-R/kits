@@ -60,12 +60,12 @@ completely* **deletes** the specified kit from the server, for all users.
 If, as a moderator, you wish to reset a player's kit cooldowns, allowing them to
 regain access to already-claimed kits, you can do so with the following commands:
 
-#### Reset a single kit
+#### Reset a single kit for a player
 
 Command: `/kit resetPlayerKit <player> <kit_name>`\
 Requires Permission: `kits.manage`
 
-#### Reset all kits
+#### Reset all kits for a player
 
 Command: `/kit resetPlayer <player>`\
 Requires Permission: `kits.manage`
