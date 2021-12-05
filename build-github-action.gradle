@@ -1,7 +1,7 @@
 plugins {
     id 'groovy'
     id 'java-gradle-plugin'
-    id 'fabric-loom' version '0.8-SNAPSHOT'
+    id 'fabric-loom' version '0.10-SNAPSHOT'
 }
 
 allprojects {
@@ -15,7 +15,7 @@ allprojects {
     version = full_version
     archivesBaseName = "${project.mod_id}"
 
-    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_16
+    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_17
 
     // Declare dependencies
     dependencies {
@@ -39,7 +39,7 @@ allprojects {
 
         // Subprojects
         subprojects.each {
-            implementation project(":${it.name}")
+            implementation project(path: ":${it.name}", configuration: "namedElements")
             include project("${it.name}:") // nest within distribution
         }
     }
@@ -93,6 +93,6 @@ tasks.withType(JavaCompile).configureEach {
     // If Javadoc is generated, this must be specified in that task too.
     it.options.encoding = "UTF-8"
 
-    // Minecraft 1.17 (21w19a) upwards uses Java 16.
-    it.options.release = 16
+    // Minecraft 1.18 upwards uses Java 17.
+    it.options.release = 17
 }
