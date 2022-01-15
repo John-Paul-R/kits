@@ -82,7 +82,7 @@ public class KitsMod implements ModInitializer
                 try {
                     LOGGER.info(String.format("Loading kit '%s'", kitFile.getName()));
                     NbtCompound kitNbt = NbtIo.read(kitFile);
-                    PlayerInventory kitInventory = new PlayerInventory(null);
+                    var kitInventory = new KitInventory();
 
                     assert kitNbt != null;
                     kitInventory.readNbt(kitNbt.getList("inventory", NbtElement.COMPOUND_TYPE));

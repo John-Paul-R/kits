@@ -23,7 +23,6 @@ import net.minecraft.util.Util;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
-import static dev.jpcode.kits.InventoryUtil.addAllCopies;
 import static dev.jpcode.kits.InventoryUtil.offerAllCopies;
 import static dev.jpcode.kits.KitsMod.KIT_MAP;
 import static net.minecraft.server.command.CommandManager.argument;
@@ -34,8 +33,8 @@ public final class KitsCommandRegistry {
     private KitsCommandRegistry() {}
 
     static int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, long cooldown) {
-        PlayerInventory kitInventory = new PlayerInventory(null);
-        addAllCopies(sourceInventory, kitInventory);
+        var kitInventory = new KitInventory();
+        kitInventory.copyFrom(sourceInventory);
         return addKit(context, kitName, new Kit(kitInventory, cooldown));
     }
 

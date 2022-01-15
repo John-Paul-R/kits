@@ -2,5 +2,5 @@ package dev.jpcode.kits;
 
 import net.minecraft.entity.player.PlayerInventory;
 
-public record Kit(PlayerInventory inventory, long cooldown) {
+public record Kit(KitInventory inventory, long cooldown) {
 }
