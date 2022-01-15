@@ -1,6 +1,10 @@
 package dev.jpcode.kits;
 
+import java.util.Iterator;
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
+import org.jetbrains.annotations.NotNull;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -10,19 +14,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.tag.Tag;
 import net.minecraft.util.collection.DefaultedList;
-
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
-
-import org.jetbrains.annotations.NotNull;
-
-import java.util.Iterator;
-import java.util.List;
 
 public class KitInventory implements Inventory {
 
@@ -49,16 +45,21 @@ public class KitInventory implements Inventory {
     public static int getHotbarSize() {
         return 9;
     }
+
     public static boolean isValidHotbarIndex(int slot) {
         return slot >= 0 && slot < 9;
     }
 
     private boolean canStackAddMore(@NotNull ItemStack existingStack, ItemStack stack) {
-        return !existingStack.isEmpty() && ItemStack.canCombine(existingStack, stack) && existingStack.isStackable() && existingStack.getCount() < existingStack.getMaxCount() && existingStack.getCount() < this.getMaxCountPerStack();
+        return !existingStack.isEmpty()
+            && ItemStack.canCombine(existingStack, stack)
+            && existingStack.isStackable()
+            && existingStack.getCount() < existingStack.getMaxCount()
+            && existingStack.getCount() < this.getMaxCountPerStack();
     }
 
     public int getEmptySlot() {
-        for(int i = 0; i < this.main.size(); ++i) {
+        for (int i = 0; i < this.main.size(); ++i) {
             if (this.main.get(i).isEmpty()) {
                 return i;
             }
@@ -68,7 +69,7 @@ public class KitInventory implements Inventory {
     }
 
     public int getSlotWithStack(ItemStack stack) {
-        for(int i = 0; i < this.main.size(); ++i) {
+        for (int i = 0; i < this.main.size(); ++i) {
             if (!this.main.get(i).isEmpty() && ItemStack.canCombine(stack, this.main.get(i))) {
                 return i;
             }
@@ -78,7 +79,7 @@ public class KitInventory implements Inventory {
     }
 
     public int indexOf(ItemStack stack) {
-        for(int i = 0; i < this.main.size(); ++i) {
+        for (int i = 0; i < this.main.size(); ++i) {
             ItemStack itemStack = this.main.get(i);
             if (!this.main.get(i).isEmpty() && ItemStack.canCombine(stack, this.main.get(i)) && !this.main.get(i).isDamaged() && !itemStack.hasEnchantments() && !itemStack.hasCustomName()) {
                 return i;
@@ -92,7 +93,7 @@ public class KitInventory implements Inventory {
         DefaultedList<ItemStack> defaultedList = null;
 
         DefaultedList<ItemStack> defaultedList2;
-        for(Iterator<DefaultedList<ItemStack>> combinedInventoryIterator = this.combinedInventory.iterator(); combinedInventoryIterator.hasNext(); slot -= defaultedList2.size()) {
+        for (Iterator<DefaultedList<ItemStack>> combinedInventoryIterator = this.combinedInventory.iterator(); combinedInventoryIterator.hasNext(); slot -= defaultedList2.size()) {
             defaultedList2 = combinedInventoryIterator.next();
             if (slot < defaultedList2.size()) {
                 defaultedList = defaultedList2;
@@ -109,7 +110,7 @@ public class KitInventory implements Inventory {
     public NbtList writeNbt(NbtList nbtList) {
         int i;
         NbtCompound nbtCompound;
-        for(i = 0; i < this.main.size(); ++i) {
+        for (i = 0; i < this.main.size(); ++i) {
             if (!this.main.get(i).isEmpty()) {
                 nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)i);
@@ -118,7 +119,7 @@ public class KitInventory implements Inventory {
             }
         }
 
-        for(i = 0; i < this.armor.size(); ++i) {
+        for (i = 0; i < this.armor.size(); ++i) {
             if (!this.armor.get(i).isEmpty()) {
                 nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 100));
@@ -127,7 +128,7 @@ public class KitInventory implements Inventory {
             }
         }
 
-        for(i = 0; i < this.offHand.size(); ++i) {
+        for (i = 0; i < this.offHand.size(); ++i) {
             if (!this.offHand.get(i).isEmpty()) {
                 nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 150));
@@ -144,7 +145,7 @@ public class KitInventory implements Inventory {
         this.armor.clear();
         this.offHand.clear();
 
-        for(int i = 0; i < nbtList.size(); ++i) {
+        for (int i = 0; i < nbtList.size(); ++i) {
             NbtCompound nbtCompound = nbtList.getCompound(i);
             int j = nbtCompound.getByte("Slot") & 255;
             ItemStack itemStack = ItemStack.fromNbt(nbtCompound);
@@ -183,19 +184,19 @@ public class KitInventory implements Inventory {
                             }
 
                             itemStack = var1.next();
-                        } while(itemStack.isEmpty());
+                        } while (itemStack.isEmpty());
 
                         return false;
                     }
 
                     itemStack = var1.next();
-                } while(itemStack.isEmpty());
+                } while (itemStack.isEmpty());
 
                 return false;
             }
 
             itemStack = var1.next();
-        } while(itemStack.isEmpty());
+        } while (itemStack.isEmpty());
 
         return false;
     }
@@ -204,7 +205,7 @@ public class KitInventory implements Inventory {
         List<ItemStack> list = null;
 
         DefaultedList<ItemStack> defaultedList;
-        for(Iterator<DefaultedList<ItemStack>> combinedInventoryIterator = this.combinedInventory.iterator(); combinedInventoryIterator.hasNext(); slot -= defaultedList.size()) {
+        for (Iterator<DefaultedList<ItemStack>> combinedInventoryIterator = this.combinedInventory.iterator(); combinedInventoryIterator.hasNext(); slot -= defaultedList.size()) {
             defaultedList = combinedInventoryIterator.next();
             if (slot < defaultedList.size()) {
                 list = defaultedList;
@@ -212,7 +213,7 @@ public class KitInventory implements Inventory {
             }
         }
 
-        return list == null ? ItemStack.EMPTY :list.get(slot);
+        return list == null ? ItemStack.EMPTY : list.get(slot);
     }
 
     public ItemStack getArmorStack(int slot) {
@@ -222,6 +223,7 @@ public class KitInventory implements Inventory {
     public void markDirty() {
         ++this.changeCount;
     }
+
     public int getChangeCount() {
         return this.changeCount;
     }
@@ -251,13 +253,13 @@ public class KitInventory implements Inventory {
     }
 
     public void copyFrom(PlayerInventory other) {
-        for(int i = 0; i < this.size(); ++i) {
+        for (int i = 0; i < this.size(); ++i) {
             this.setStack(i, other.getStack(i).copy());
         }
     }
 
     public void copyFrom(KitInventory other) {
-        for(int i = 0; i < this.size(); ++i) {
+        for (int i = 0; i < this.size(); ++i) {
             this.setStack(i, other.getStack(i).copy());
         }
     }
@@ -270,7 +272,7 @@ public class KitInventory implements Inventory {
         DefaultedList<ItemStack> defaultedList = null;
 
         DefaultedList<ItemStack> defaultedList2;
-        for(Iterator<DefaultedList<ItemStack>> var3 = this.combinedInventory.iterator(); var3.hasNext(); slot -= defaultedList2.size()) {
+        for (Iterator<DefaultedList<ItemStack>> var3 = this.combinedInventory.iterator(); var3.hasNext(); slot -= defaultedList2.size()) {
             defaultedList2 = var3.next();
             if (slot < defaultedList2.size()) {
                 defaultedList = defaultedList2;
@@ -291,7 +293,7 @@ public class KitInventory implements Inventory {
         List<ItemStack> list = null;
 
         DefaultedList<ItemStack> defaultedList;
-        for(Iterator<DefaultedList<ItemStack>> var4 = this.combinedInventory.iterator(); var4.hasNext(); slot -= defaultedList.size()) {
+        for (Iterator<DefaultedList<ItemStack>> var4 = this.combinedInventory.iterator(); var4.hasNext(); slot -= defaultedList.size()) {
             defaultedList = var4.next();
             if (slot < defaultedList.size()) {
                 list = defaultedList;
@@ -308,7 +310,7 @@ public class KitInventory implements Inventory {
 
     public int getOccupiedSlotWithRoomForStack(ItemStack stack) {
         // Try all main slots
-        for(int i = 0; i < this.main.size(); ++i) {
+        for (int i = 0; i < this.main.size(); ++i) {
             if (this.canStackAddMore(this.main.get(i), stack)) {
                 return i;
             }
@@ -321,7 +323,6 @@ public class KitInventory implements Inventory {
 
         return -1;
     }
-
 
     private int addStack(ItemStack stack) {
         int i = this.getOccupiedSlotWithRoomForStack(stack);
@@ -364,7 +365,6 @@ public class KitInventory implements Inventory {
         }
     }
 
-
     public boolean insertStack(int slot, ItemStack stack) {
         if (stack.isEmpty()) {
             return false;
@@ -392,12 +392,12 @@ public class KitInventory implements Inventory {
                     } else {
                         stack.setCount(this.addStack(slot, stack));
                     }
-                } while(!stack.isEmpty() && stack.getCount() < i);
+                } while (!stack.isEmpty() && stack.getCount() < i);
 
                 return stack.getCount() < i;
             }
-        } catch (Throwable var6) {
-            CrashReport crashReport = CrashReport.create(var6, "Adding item to inventory");
+        } catch (Throwable ex) {
+            CrashReport crashReport = CrashReport.create(ex, "Adding item to inventory");
             CrashReportSection crashReportSection = crashReport.addElement("Item being added");
             crashReportSection.add("Item ID", Item.getRawId(stack.getItem()));
             crashReportSection.add("Item data", stack.getDamage());
