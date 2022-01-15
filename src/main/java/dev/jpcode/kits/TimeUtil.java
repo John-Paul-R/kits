@@ -66,6 +66,10 @@ public final class TimeUtil {
 
         }
 
+        if (builder.isEmpty()) {
+            return "0s";
+        }
+
         return builder.toString();
     }
 
