@@ -63,7 +63,7 @@ public final class KitsCommandRegistry {
         CommandNode<ServerCommandSource> kitNode = dispatcher.register(literal("kit"));
 
         kitNode.addChild(literal("add")
-            .requires(Permissions.require("kits.manage"))
+            .requires(Permissions.require("kits.manage", 4))
             .then(argument("kit_name", StringArgumentType.word())
                 .then(argument("cooldown", LongArgumentType.longArg(-1))
                     .executes(context -> addKit(
@@ -126,7 +126,7 @@ public final class KitsCommandRegistry {
         );
 
         kitNode.addChild(literal("remove")
-            .requires(Permissions.require("kits.manage"))
+            .requires(Permissions.require("kits.manage", 4))
             .then(argument("kit_name", StringArgumentType.word())
                 .suggests(KitsMod::suggestionProvider)
                 .executes(context -> {
@@ -148,7 +148,7 @@ public final class KitsCommandRegistry {
         );
 
         kitNode.addChild(literal("reload")
-            .requires(Permissions.require("kits.manage"))
+            .requires(Permissions.require("kits.manage", 4))
             .executes(context -> {
                 KitsMod.reloadKits(context.getSource().getServer());
                 return 1;
@@ -156,7 +156,7 @@ public final class KitsCommandRegistry {
         );
 
         kitNode.addChild(literal("resetPlayerKit")
-            .requires(Permissions.require("kits.manage"))
+            .requires(Permissions.require("kits.manage", 4))
             .then(argument("players", EntityArgumentType.players())
                 .then(argument("kit_name", StringArgumentType.word())
                     .suggests(KitsMod::suggestionProvider)
@@ -178,7 +178,7 @@ public final class KitsCommandRegistry {
         );
 
         kitNode.addChild(literal("resetPlayer")
-            .requires(Permissions.require("kits.manage"))
+            .requires(Permissions.require("kits.manage", 4))
             .then(argument("players", EntityArgumentType.players())
                 .executes(context -> {
                     var targetPlayers = EntityArgumentType.getPlayers(context, "players");
