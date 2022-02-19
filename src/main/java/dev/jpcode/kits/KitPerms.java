@@ -13,12 +13,6 @@ public final class KitPerms {
     private KitPerms() {}
 
     static void init() {
-        PermissionCheckEvent.EVENT.register((source, permission) -> {
-            if (isSuperAdmin(source)) {
-                return TriState.TRUE;
-            }
-            return TriState.DEFAULT;
-        });
     }
 
     private static boolean isSuperAdmin(CommandSource source) {
