@@ -11,13 +11,14 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
 
+import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 
@@ -59,7 +60,11 @@ public final class KitsCommandRegistry {
         return 1;
     }
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, boolean dedicated) {
+    public static void register(
+        CommandDispatcher<ServerCommandSource> dispatcher,
+        CommandRegistryAccess commandRegistryAccess,
+        CommandManager.RegistrationEnvironment registrationEnvironment)
+    {
         CommandNode<ServerCommandSource> kitNode = dispatcher.register(literal("kit"));
 
         kitNode.addChild(literal("add")
@@ -169,7 +174,7 @@ public final class KitsCommandRegistry {
                         }
 
                         context.getSource().sendFeedback(
-                            new LiteralText(String.format("Reset kit '%s' cooldown for %d players", kitName, targetPlayers.size())),
+                            Text.literal(String.format("Reset kit '%s' cooldown for %d players", kitName, targetPlayers.size())),
                             true);
 
                         return 1;
@@ -187,7 +192,7 @@ public final class KitsCommandRegistry {
                     }
 
                     context.getSource().sendFeedback(
-                        new LiteralText(String.format("Reset all kit cooldowns for %d players", targetPlayers.size())),
+                        Text.literal(String.format("Reset all kit cooldowns for %d players", targetPlayers.size())),
                         true);
 
                     return 1;

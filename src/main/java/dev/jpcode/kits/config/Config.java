@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
@@ -89,12 +88,12 @@ public abstract class Config {
     static final Style ACCENT_STYLE = Style.EMPTY.withFormatting(Formatting.GREEN);
 
     public @NotNull Text stateAsText() {
-        LiteralText result = new LiteralText("");
+        var result = Text.literal("");
         String newLine = "\n";//System.getProperty("line.separator");
 
-        result.append(new LiteralText(displayName + " {").setStyle(DEFAULT_STYLE));
+        result.append(Text.literal(displayName + " {").setStyle(DEFAULT_STYLE));
         result.append(newLine);
-        LiteralText propsText = new LiteralText("");
+        var propsText = Text.literal("");
         result.append(propsText);
 
         //print field names paired with their values
@@ -107,7 +106,7 @@ public abstract class Config {
                 ex.printStackTrace();
             }
         }
-        result.append(new LiteralText("}").setStyle(ACCENT_STYLE));
+        result.append(Text.literal("}").setStyle(ACCENT_STYLE));
 
         return result;
 
@@ -135,9 +134,9 @@ public abstract class Config {
     }
 
     private MutableText fieldAsText(Field field) throws IllegalAccessException {
-        return new LiteralText("")
-            .append(new LiteralText(field.getName() + ": ").setStyle(DEFAULT_STYLE))
-            .append(new LiteralText(field.get(this.getClass()).toString()));
+        return Text.literal("")
+            .append(Text.literal(field.getName() + ": ").setStyle(DEFAULT_STYLE))
+            .append(Text.literal(field.get(this.getClass()).toString()));
     }
 
     public @Nullable MutableText getFieldValueAsText(String fieldName) throws NoSuchFieldException {

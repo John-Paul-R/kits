@@ -22,7 +22,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.util.WorldSavePath;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
 import dev.jpcode.kits.config.KitsConfig;
