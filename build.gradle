@@ -108,7 +108,7 @@ import com.modrinth.minotaur.request.VersionType
 
 modrinth {
     Map env = getenv()
-    token = env.get("MODRINTH_KEY") // An environment property called MODRINTH that is your token, set via Gradle CLI, GitHub Actions, Idea Run Configuration, or other
+    token = env.get("MODRINTH") // An environment property called MODRINTH that is your token, set via Gradle CLI, GitHub Actions, Idea Run Configuration, or other
     projectId = project.mr_project_id
     versionNumber = project.version // Will fail if Modrinth has this version already
     versionType = project.version.contains('alpha') ? VersionType.ALPHA.toString()
@@ -143,13 +143,13 @@ task publishModrinth(type: TaskModrinthUpload) { // Make sure it runs after buil
     Map env = getenv()
     onlyIf {
         // Only attempt to run this task if the MODRINTH variable is set in .env, otherwise SKIP it
-        env.containsKey("MODRINTH_KEY")
+        env.containsKey("MODRINTH")
     }
 }
 // Define how artifacts are published to CurseForge (https://curseforge.com)
 curseforge {
     Map env = getenv()
-    apiKey = env.get("CURSEFORGE_KEY")
+    apiKey = env.get("CURSEFORGE")
 
     // Declare all projects
     //noinspection GroovyAssignabilityCheck
@@ -195,7 +195,7 @@ task publishGithubRelease (type: GithubReleaseTask){
 
     Map env = getenv()
     onlyIf {
-        env.containsKey("GITHUB")
+    env.containsKey("GITHUB")
     }
 }
 githubRelease {
