@@ -14,7 +14,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.tag.Tag;
+import net.minecraft.tag.TagKey;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
@@ -240,7 +240,7 @@ public class KitInventory implements Inventory {
         return false;
     }
 
-    public boolean contains(Tag<Item> tag) {
+    public boolean contains(TagKey<Item> tag) {
         for (DefaultedList<ItemStack> itemStacks : this.combinedInventory) {
             for (ItemStack itemStack : itemStacks) {
                 if (!itemStack.isEmpty() && itemStack.isIn(tag)) {
