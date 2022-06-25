@@ -88,12 +88,12 @@ public abstract class Config {
     static final Style ACCENT_STYLE = Style.EMPTY.withFormatting(Formatting.GREEN);
 
     public @NotNull Text stateAsText() {
-        var result = Text.literal("");
+        var result = Text.empty();
         String newLine = "\n";//System.getProperty("line.separator");
 
         result.append(Text.literal(displayName + " {").setStyle(DEFAULT_STYLE));
         result.append(newLine);
-        var propsText = Text.literal("");
+        var propsText = Text.empty();
         result.append(propsText);
 
         //print field names paired with their values
@@ -134,7 +134,7 @@ public abstract class Config {
     }
 
     private MutableText fieldAsText(Field field) throws IllegalAccessException {
-        return Text.literal("")
+        return Text.empty()
             .append(Text.literal(field.getName() + ": ").setStyle(DEFAULT_STYLE))
             .append(Text.literal(field.get(this.getClass()).toString()));
     }
