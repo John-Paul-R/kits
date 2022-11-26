@@ -117,7 +117,7 @@ Questions? Contact me in [my Discord server][discord].
 [curseforge:files]: https://www.curseforge.com/minecraft/mc-mods/kits/files/all
 [modrinth:files]: https://modrinth.com/mod/kits/versions
 [fabric]: https://fabricmc.net/
-[licence]: LICENSE
+[licence]: LICENCE
 [minecraft]: https://minecraft.net/
 [releases]: https://github.com/John-Paul-R/kits/releases
 [security]: .github/SECURITY.md
