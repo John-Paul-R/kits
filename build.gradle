@@ -266,7 +266,7 @@ String readChangelogFromFile() {
     var file = new File(changelogFilePath)
     if (!file.exists()) {
         logger.warn("'%s' not found.", changelogFilePath)
-        throw new FileNotFoundException()
+        return "changelog file not found"
     }
     return file.getText('UTF-8')
 }
