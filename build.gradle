@@ -31,6 +31,7 @@ allprojects {
         // Mods
         modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
         modImplementation "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
+        modImplementation include("eu.pb4:sgui:${project.sgui_version}")
 
         // Code Quality
         compileOnly "org.jetbrains:annotations:${project.jetbrains_annotations_version}"
@@ -38,8 +39,8 @@ allprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${project.junit_jupiter_version}"
 
         // JiJ Dependencies
-        modApi 	"me.lucko:fabric-permissions-api:${project.permissions_api_version}"
-        include	"me.lucko:fabric-permissions-api:${project.permissions_api_version}"
+        modApi  "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
+        include "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
 
         // Subprojects
         subprojects.each {

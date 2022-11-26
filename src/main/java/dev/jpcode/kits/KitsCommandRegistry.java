@@ -2,7 +2,10 @@ package dev.jpcode.kits;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Map;
+import java.util.function.Function;
 
+import eu.pb4.sgui.api.gui.SimpleGuiBuilder;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 
 import com.mojang.brigadier.CommandDispatcher;
@@ -14,24 +17,29 @@ import com.mojang.brigadier.tree.CommandNode;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
+import dev.jpcode.kits.command.KitClaimCommand;
 
-import static dev.jpcode.kits.InventoryUtil.offerAllCopies;
 import static dev.jpcode.kits.KitsMod.KIT_MAP;
+import static dev.jpcode.kits.KitsMod.getAllKitsForPlayer;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public final class KitsCommandRegistry {
 
-    private KitsCommandRegistry() {}
+    private KitsCommandRegistry() {
+    }
 
     static int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, long cooldown) {
         var kitInventory = new KitInventory();
@@ -63,8 +71,7 @@ public final class KitsCommandRegistry {
     public static void register(
         CommandDispatcher<ServerCommandSource> dispatcher,
         CommandRegistryAccess commandRegistryAccess,
-        CommandManager.RegistrationEnvironment registrationEnvironment)
-    {
+        CommandManager.RegistrationEnvironment registrationEnvironment) {
         CommandNode<ServerCommandSource> kitNode = dispatcher.register(literal("kit"));
 
         kitNode.addChild(literal("add")
@@ -93,40 +100,7 @@ public final class KitsCommandRegistry {
         kitNode.addChild(literal("claim")
             .then(argument("kit_name", StringArgumentType.word())
                 .suggests(KitsMod::suggestionProvider)
-                .executes(context -> {
-                    String kitName = StringArgumentType.getString(context, "kit_name");
-
-                    PlayerKitData playerData = ((ServerPlayerEntityAccess) context.getSource().getPlayer()).kits$getPlayerData();
-                    Kit kit = KIT_MAP.get(kitName);
-                    long currentTime = Util.getEpochTimeMs();
-                    long remainingTime = (playerData.getKitUsedTime(kitName) + kit.cooldown()) - currentTime;
-
-                    if (!KitPerms.checkKit(context.getSource(), kitName)) {
-                        context.getSource().sendError(Text.of(String.format(
-                            "Insufficient permissions for kit '%s'.",
-                            kitName)));
-                        return -1;
-                    } else if (remainingTime > 0) {
-                        context.getSource().sendError(Text.of(
-                            String.format(
-                                "Kit '%s' is on cooldown. %s remaining.",
-                                kitName,
-                                TimeUtil.formatTime(remainingTime)
-                        )));
-                        return -2;
-                    }
-
-                    PlayerInventory playerInventory = context.getSource().getPlayer().getInventory();
-                    playerData.useKit(kitName);
-                    offerAllCopies(kit.inventory(), playerInventory);
-
-                    context.getSource().sendFeedback(
-                        Text.of(String.format("Successfully claimed kit '%s'!", kitName)),
-                        context.getSource().getServer().shouldBroadcastConsoleToOps()
-                    );
-
-                    return 1;
-                })
+                .executes(new KitClaimCommand())
             ).build()
         );
 
@@ -200,5 +174,48 @@ public final class KitsCommandRegistry {
             ).build()
         );
 
+        var kitsSguiBuilder = literal("kits")
+            .executes(ctx -> {
+                var player = ctx.getSource().getPlayerOrThrow();
+                var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
+                var allPlayerKits = getAllKitsForPlayer(player);
+
+                long currentTime = Util.getEpochTimeMs();
+                Function<Map.Entry<String, Kit>, Boolean> canUseKit = (entry) ->
+                    (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldown()) - currentTime <= 0;
+
+                var simpleGuiBuilder = new SimpleGuiBuilder(ScreenHandlerType.GENERIC_9X3, false);
+                simpleGuiBuilder.setLockPlayerInventory(true);
+                simpleGuiBuilder.setTitle(Text.literal("Claim Kit"));
+
+                int i = 0;
+                for (var kitEntry : allPlayerKits.toList()) {
+                    var defaultItemStack = (canUseKit.apply(kitEntry)
+                        ? Items.EMERALD_BLOCK
+                        : Items.GRAY_CONCRETE_POWDER).getDefaultStack();
+                    simpleGuiBuilder.setSlot(
+                        i++,
+                        createKitItemStack(kitEntry.getKey(), defaultItemStack),
+                        (index, type, action, gui) -> {
+                            if (type.isLeft) {
+                                KitClaimCommand.exec(player, kitEntry.getKey());
+                                gui.close();
+                            }
+                        });
+                }
+
+                var simpleGui = simpleGuiBuilder.build(player);
+                simpleGui.open();
+
+                return 0;
+            });
+        dispatcher.register(kitsSguiBuilder);
     }
+
+    private static ItemStack createKitItemStack(String kitName, ItemStack itemStack) {
+        return itemStack
+            .copy()
+            .setCustomName(Text.literal(kitName));
+    }
+
 }

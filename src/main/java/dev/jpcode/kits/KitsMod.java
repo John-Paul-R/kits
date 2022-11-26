@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,16 +20,18 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Util;
 import net.minecraft.util.WorldSavePath;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
+import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.config.KitsConfig;
 
-public class KitsMod implements ModInitializer
-{
+public class KitsMod implements ModInitializer {
     public static final Logger LOGGER = LogManager.getLogger("kits");
     public static final KitsConfig CONFIG = new KitsConfig(
         Path.of("./config/kits.properties"),
@@ -54,8 +57,7 @@ public class KitsMod implements ModInitializer
     }
 
     @Override
-    public void onInitialize()
-    {
+    public void onInitialize() {
         LOGGER.info("Kits is getting ready...");
 
         KitPerms.init();
@@ -99,6 +101,26 @@ public class KitsMod implements ModInitializer
         CONFIG.loadOrCreateProperties();
     }
 
+    public static Stream<Map.Entry<String, Kit>> getAllKitsForPlayer(ServerPlayerEntity player) {
+        var source = player.getCommandSource();
+        return KIT_MAP.entrySet()
+            .stream()
+            .filter(kitEntry ->
+                KitPerms.checkKit(source, kitEntry.getKey())
+            );
+    }
+
+    public static Stream<Map.Entry<String, Kit>> getClaimableKitsForPlayer(ServerPlayerEntity player) {
+        var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
+        long currentTime = Util.getEpochTimeMs();
+
+        return getAllKitsForPlayer(player)
+            .filter(entry -> {
+                long remainingTime = (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldown()) - currentTime;
+                return remainingTime <= 0;
+            });
+    }
+
     /**
      * Suggests existing kits that the user has permissions for.
      *
@@ -108,9 +130,11 @@ public class KitsMod implements ModInitializer
      */
     public static CompletableFuture<Suggestions> suggestionProvider(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
         ServerCommandSource source = context.getSource();
-        return ListSuggestion.getSuggestionsBuilder(builder, KIT_MAP.keySet().stream().filter(kitName ->
-            KitPerms.checkKit(source, kitName)
-        ).toList());
+        return ListSuggestion.getSuggestionsBuilder(
+            builder,
+            getAllKitsForPlayer(source.getPlayer())
+                .map(Map.Entry::getKey)
+                .toList());
     }
 
     public static void setStarterKit(String s) {
