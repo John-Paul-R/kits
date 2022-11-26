@@ -1,7 +1,7 @@
 plugins {
     id 'groovy'
     id 'java-gradle-plugin'
-    id 'fabric-loom' version '0.12-SNAPSHOT'
+    id 'fabric-loom' version '1.0-SNAPSHOT'
 }
 
 allprojects {
@@ -27,6 +27,7 @@ allprojects {
         // Mods
         modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
         modImplementation "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
+        modImplementation include("eu.pb4:sgui:${project.sgui_version}")
 
         // Code Quality
         compileOnly "org.jetbrains:annotations:${project.jetbrains_annotations_version}"
