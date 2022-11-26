@@ -20,6 +20,7 @@ public class PlayerKitData extends PlayerData {
 
     public void useKit(String kitName) {
         kitUsedTimes.put(kitName, Util.getEpochTimeMs());
+        markDirty();
         save();
     }
 
