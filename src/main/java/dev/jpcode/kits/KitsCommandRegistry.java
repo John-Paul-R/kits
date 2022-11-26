@@ -14,14 +14,15 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
 
+import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.command.argument.ItemStackArgumentType;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -50,14 +51,8 @@ public final class KitsCommandRegistry {
     static int addKit(CommandContext<ServerCommandSource> context, String kitName, Kit kit) {
         KIT_MAP.put(kitName, kit);
 
-        NbtCompound root = new NbtCompound();
-        root.put("inventory", kit.inventory().writeNbt(new NbtList()));
-        root.putLong("cooldown", kit.cooldown());
         try {
-            NbtIo.write(
-                root,
-                KitsMod.getKitsDir().toPath().resolve(String.format("%s.nbt", kitName)).toFile()
-            );
+            saveKit(kitName, kit);
             context.getSource().sendFeedback(
                 Text.of(String.format("Kit '%s' created from current inventory.", kitName)),
                 true
@@ -66,6 +61,16 @@ public final class KitsCommandRegistry {
             e.printStackTrace();
         }
         return 1;
+    }
+
+    static void saveKit(String kitName, Kit kit) throws IOException {
+        NbtCompound root = new NbtCompound();
+        kit.writeNbt(root);
+
+        NbtIo.write(
+            root,
+            KitsMod.getKitsDir().toPath().resolve(String.format("%s.nbt", kitName)).toFile()
+        );
     }
 
     public static void register(
@@ -94,6 +99,28 @@ public final class KitsCommandRegistry {
                                 LongArgumentType.getLong(context, "cooldown"),
                                 StringArgumentType.getString(context, "time_unit"))
                         ))))
+            ).build()
+        );
+
+        kitNode.addChild(literal("setDisplayItem")
+            .requires(Permissions.require("kits.manage", 4))
+            .then(argument("kit_name", StringArgumentType.word())
+                .suggests(KitsMod::suggestionProvider)
+                .then(argument("item", ItemStackArgumentType.itemStack(commandRegistryAccess))
+                    .executes(context -> {
+                        var kitName = StringArgumentType.getString(context, "kit_name");
+                        var item = ItemStackArgumentType.getItemStackArgument(context, "item");
+
+                        var existingKit = KIT_MAP.get(kitName);
+                        existingKit.setDisplayItem(item.getItem());
+                        try {
+                            saveKit(kitName, existingKit);
+                        } catch (IOException e) {
+                            throw new CommandException(Text.literal("Failed to save kit."));
+                        }
+                        return 0;
+                    })
+                )
             ).build()
         );
 
@@ -191,8 +218,12 @@ public final class KitsCommandRegistry {
                 int i = 0;
                 for (var kitEntry : allPlayerKits.toList()) {
                     var defaultItemStack = (canUseKit.apply(kitEntry)
-                        ? Items.EMERALD_BLOCK
-                        : Items.GRAY_CONCRETE_POWDER).getDefaultStack();
+                            ? kitEntry.getValue()
+                                .displayItem()
+                                .orElse(Items.EMERALD_BLOCK)
+                            : Items.GRAY_CONCRETE_POWDER)
+                        .getDefaultStack();
+
                     simpleGuiBuilder.setSlot(
                         i++,
                         createKitItemStack(kitEntry.getKey(), defaultItemStack),

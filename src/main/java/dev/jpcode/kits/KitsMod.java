@@ -16,7 +16,6 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
@@ -83,14 +82,9 @@ public class KitsMod implements ModInitializer {
                 try {
                     LOGGER.info(String.format("Loading kit '%s'", kitFile.getName()));
                     NbtCompound kitNbt = NbtIo.read(kitFile);
-                    var kitInventory = new KitInventory();
-
-                    assert kitNbt != null;
-                    kitInventory.readNbt(kitNbt.getList("inventory", NbtElement.COMPOUND_TYPE));
-                    long cooldown = kitNbt.getLong("cooldown");
                     String fileName = kitFile.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
-                    KIT_MAP.put(kitName, new Kit(kitInventory, cooldown));
+                    KIT_MAP.put(kitName, Kit.fromNbt(kitNbt));
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (NullPointerException e) {
