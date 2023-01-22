@@ -1,15 +1,15 @@
 package dev.jpcode.kits;
 
-import java.util.Optional;
-
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.item.Item;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
+
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
 
 public class Kit {
 
@@ -56,7 +56,7 @@ public class Kit {
         if (this.displayItem().isPresent()) {
             root.putString(
                 StorageKey.DISPLAY_ITEM,
-                Registry.ITEM.getKey(this.displayItem().get()).get().getValue().toString());
+                Registries.ITEM.getKey(this.displayItem().get()).get().getValue().toString());
         }
 
         return root;
@@ -69,7 +69,7 @@ public class Kit {
         kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY, NbtElement.COMPOUND_TYPE));
         long cooldown = kitNbt.getLong(StorageKey.COOLDOWN);
         var kitDisplayItem = kitNbt.contains(StorageKey.DISPLAY_ITEM)
-            ? Registry.ITEM.get(new Identifier(kitNbt.getString(StorageKey.DISPLAY_ITEM)))
+            ? Registries.ITEM.get(new Identifier(kitNbt.getString(StorageKey.DISPLAY_ITEM)))
             : null;
 
         return new Kit(kitInventory, cooldown, kitDisplayItem);
