@@ -1,15 +1,15 @@
 package dev.jpcode.kits;
 
+import java.util.Optional;
+
+import org.jetbrains.annotations.Nullable;
+
 import net.minecraft.item.Item;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
-
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Optional;
 
 public class Kit {
 
