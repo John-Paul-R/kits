@@ -114,7 +114,7 @@ Questions? Contact me in [my Discord server][discord].
 [nbtexp]: https://github.com/jaquadro/NBTExplorer
 [contributing]: .github/CONTRIBUTING.md
 [curseforge]: https://curseforge.com/minecraft/mc-mods/kits
-[curseforge:files]: https://www.curseforge.com/minecraft/mc-mods/kits/files/all
+[curseforge:files]: https://www.curseforge.com/minecraft/mc-mods/kits/files
 [modrinth:files]: https://modrinth.com/mod/kits/versions
 [fabric]: https://fabricmc.net/
 [licence]: LICENCE
