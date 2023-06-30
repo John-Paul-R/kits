@@ -53,7 +53,7 @@ public final class KitsCommandRegistry {
 
         try {
             saveKit(kitName, kit);
-            context.getSource().sendFeedback(
+            context.getSource().sendFeedback(() ->
                 Text.of(String.format("Kit '%s' created from current inventory.", kitName)),
                 true
             );
@@ -146,7 +146,7 @@ public final class KitsCommandRegistry {
                         return -1;
                     }
 
-                    context.getSource().sendFeedback(Text.of(String.format("Removed kit '%s'.", kitName)), true);
+                    context.getSource().sendFeedback(() -> Text.of(String.format("Removed kit '%s'.", kitName)), true);
 
                     return 1;
                 })
@@ -174,7 +174,7 @@ public final class KitsCommandRegistry {
                             ((ServerPlayerEntityAccess) player).kits$getPlayerData().resetKitCooldown(kitName);
                         }
 
-                        context.getSource().sendFeedback(
+                        context.getSource().sendFeedback(() ->
                             Text.literal(String.format("Reset kit '%s' cooldown for %d players", kitName, targetPlayers.size())),
                             true);
 
@@ -192,7 +192,7 @@ public final class KitsCommandRegistry {
                         ((ServerPlayerEntityAccess) player).kits$getPlayerData().resetAllKits();
                     }
 
-                    context.getSource().sendFeedback(
+                    context.getSource().sendFeedback(() ->
                         Text.literal(String.format("Reset all kit cooldowns for %d players", targetPlayers.size())),
                         true);
 
