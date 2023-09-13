@@ -108,6 +108,12 @@ tasks.withType(JavaCompile).configureEach {
     it.options.release.set(17)
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("net.fabricmc:fabric-loader:$loader_version")
+    }
+}
+
 // Define how artifacts are published to Modrinth (https://modrinth.com)
 import com.modrinth.minotaur.TaskModrinthUpload
 import com.modrinth.minotaur.request.VersionType
