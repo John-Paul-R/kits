@@ -31,6 +31,7 @@ import net.minecraft.util.Util;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.command.KitClaimCommand;
+import dev.jpcode.kits.command.KitCommandsManagerCommand;
 
 import static dev.jpcode.kits.KitsMod.KIT_MAP;
 import static dev.jpcode.kits.KitsMod.getAllKitsForPlayer;
@@ -63,7 +64,7 @@ public final class KitsCommandRegistry {
         return 1;
     }
 
-    static void saveKit(String kitName, Kit kit) throws IOException {
+    public static void saveKit(String kitName, Kit kit) throws IOException {
         NbtCompound root = new NbtCompound();
         kit.writeNbt(root);
 
@@ -201,6 +202,27 @@ public final class KitsCommandRegistry {
             ).build()
         );
 
+        kitNode.addChild(literal("commands")
+            .requires(Permissions.require("kits.manage", 4))
+            .then(argument("kit_name", StringArgumentType.word())
+                .suggests(KitsMod::suggestionProvider)
+                .then(literal("list")
+                    .executes(KitCommandsManagerCommand::listCommandsForKit)
+                )
+                .then(literal("add")
+                    .then(argument("command", StringArgumentType.greedyString())
+                        .executes(KitCommandsManagerCommand::addCommandToKit)
+                    )
+                )
+                .then(literal("remove")
+                    .then(argument("command", StringArgumentType.greedyString())
+                        .executes(KitCommandsManagerCommand::removeCommandFromKit)
+                    )
+                )
+            )
+            .build()
+        );
+
         var kitsSguiBuilder = literal("kits")
             .executes(ctx -> {
                 var player = ctx.getSource().getPlayerOrThrow();
@@ -248,5 +270,4 @@ public final class KitsCommandRegistry {
             .copy()
             .setCustomName(Text.literal(kitName));
     }
-
 }
