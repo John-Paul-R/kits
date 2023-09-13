@@ -18,6 +18,7 @@ import dev.jpcode.kits.TimeUtil;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
 import static dev.jpcode.kits.InventoryUtil.offerAllCopies;
+import static dev.jpcode.kits.KitUtil.runCommands;
 import static dev.jpcode.kits.KitsMod.KIT_MAP;
 
 public class KitClaimCommand implements Command<ServerCommandSource> {
@@ -53,6 +54,7 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
         PlayerInventory playerInventory = player.getInventory();
         playerData.useKit(kitName);
         offerAllCopies(kit.inventory(), playerInventory);
+        if (kit.commands().isPresent()) runCommands(player, kit.commands().get());
 
         commandSource.sendFeedback(
             Text.of(String.format("Successfully claimed kit '%s'!", kitName)),

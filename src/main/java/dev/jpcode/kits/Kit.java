@@ -1,5 +1,7 @@
 package dev.jpcode.kits;
 
+import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
@@ -8,6 +10,8 @@ import net.minecraft.item.Item;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
+import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
 
@@ -16,16 +20,18 @@ public class Kit {
     private final KitInventory inventory;
     private final long cooldown;
     private @Nullable Item displayItem;
+    private @Nullable LinkedList<String> commands;
 
     public Kit(KitInventory inventory, long cooldown) {
         this.inventory = inventory;
         this.cooldown = cooldown;
     }
 
-    public Kit(KitInventory inventory, long cooldown, Item displayItem) {
+    public Kit(KitInventory inventory, long cooldown, @Nullable Item displayItem, @Nullable LinkedList<String> commands) {
         this.inventory = inventory;
         this.cooldown = cooldown;
         this.displayItem = displayItem;
+        this.commands = commands;
     }
 
     public KitInventory inventory() {
@@ -40,17 +46,36 @@ public class Kit {
         return Optional.ofNullable(displayItem);
     }
 
-    public void setDisplayItem(Item item) {
+    public void setDisplayItem(@Nullable Item item) {
         this.displayItem = item;
     }
 
-    private static class StorageKey {
+    public Optional<LinkedList<String>> commands() {
+        return Optional.ofNullable(commands);
+    }
+
+    public boolean addCommand(String command) {
+        if (commands != null && commands.contains(command)) return false;
+        if (commands == null) this.commands = new LinkedList<>();
+        this.commands.add(command);
+        return true;
+    }
+
+    public boolean removeCommand(String command) {
+        if (commands().isEmpty() || !Objects.requireNonNull(commands).contains(command)) return false;
+        if (commands.size() == 1) commands = null;
+        else commands.remove(command);
+        return true;
+    }
+
+    private static final class StorageKey {
         public static final String INVENTORY = "inventory";
         public static final String COOLDOWN = "cooldown";
         public static final String DISPLAY_ITEM = "display_item";
+        public static final String COMMANDS = "commands";
     }
 
-    public NbtCompound writeNbt(NbtCompound root) {
+    public void writeNbt(NbtCompound root) {
         root.put(StorageKey.INVENTORY, this.inventory().writeNbt(new NbtList()));
         root.putLong(StorageKey.COOLDOWN, this.cooldown());
         if (this.displayItem().isPresent()) {
@@ -58,8 +83,13 @@ public class Kit {
                 StorageKey.DISPLAY_ITEM,
                 Registry.ITEM.getKey(this.displayItem().get()).get().getValue().toString());
         }
-
-        return root;
+        if (this.commands().isPresent()) {
+            NbtList list = new NbtList();
+            for (String command : Objects.requireNonNull(commands)) {
+                list.add(NbtString.of(command));
+            }
+            root.put(StorageKey.COMMANDS, list);
+        }
     }
 
     public static Kit fromNbt(NbtCompound kitNbt) {
@@ -71,7 +101,10 @@ public class Kit {
         var kitDisplayItem = kitNbt.contains(StorageKey.DISPLAY_ITEM)
             ? Registry.ITEM.get(new Identifier(kitNbt.getString(StorageKey.DISPLAY_ITEM)))
             : null;
+        LinkedList<String> commands = kitNbt.contains(StorageKey.COMMANDS)
+            ? new LinkedList<>(kitNbt.getList(StorageKey.COMMANDS, NbtElement.STRING_TYPE).stream().map(NbtElement::asString).toList())
+            : null;
 
-        return new Kit(kitInventory, cooldown, kitDisplayItem);
+        return new Kit(kitInventory, cooldown, kitDisplayItem, commands);
     }
 }
