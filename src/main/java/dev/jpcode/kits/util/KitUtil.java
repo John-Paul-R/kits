@@ -1,6 +1,8 @@
-package dev.jpcode.kits;
+package dev.jpcode.kits.util;
 
 import net.minecraft.server.network.ServerPlayerEntity;
+
+import dev.jpcode.kits.Kit;
 
 public final class KitUtil {
 

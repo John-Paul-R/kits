@@ -1,4 +1,4 @@
-package dev.jpcode.kits;
+package dev.jpcode.kits.data;
 
 import java.io.File;
 import java.util.HashMap;
@@ -8,7 +8,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Util;
 
-public class PlayerKitData extends PlayerData {
+public class PlayerKitData extends PlayerData implements IPlayerKitData {
 
     private Map<String, Long> kitUsedTimes;
     private boolean hasReceivedStarterKit;

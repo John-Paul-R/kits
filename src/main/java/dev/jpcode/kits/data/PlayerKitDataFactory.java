@@ -1,4 +1,4 @@
-package dev.jpcode.kits;
+package dev.jpcode.kits.data;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,11 +13,17 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+import dev.jpcode.kits.KitsMod;
+
 public final class PlayerKitDataFactory {
 
     private PlayerKitDataFactory() {}
 
-    public static PlayerKitData create(ServerPlayerEntity player) {
+    public static IPlayerKitData create(ServerPlayerEntity player) {
+        if (KitsMod.useMySQL) {
+            return new MySQLPlayerKitData(player);
+        }
+
         File saveFile = getPlayerDataFile(player);
         PlayerKitData pData = new PlayerKitData(player, saveFile);
         if (Files.exists(saveFile.toPath()) && saveFile.length() != 0) {

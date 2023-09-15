@@ -48,6 +48,9 @@ allprojects {
         modApi  "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
         include "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
 
+        // MySQL
+        implementation include('com.mysql:mysql-connector-j:8.1.0')
+
         // Subprojects
         subprojects.each {
             implementation project(path: ":${it.name}", configuration: "namedElements")

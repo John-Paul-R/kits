@@ -3,6 +3,7 @@ package dev.jpcode.kits;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -29,6 +30,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.config.KitsConfig;
+import dev.jpcode.kits.data.PlayerDataManager;
 
 public class KitsMod implements ModInitializer {
     public static final Logger LOGGER = LogManager.getLogger("kits");
@@ -37,11 +39,14 @@ public class KitsMod implements ModInitializer {
         "Kits Config",
         "https://github.com/John-Paul-R/kits/wiki/Basic-Usage"
     );
-    public static final Map<String, Kit> KIT_MAP = new HashMap<String, Kit>();
+    public static final Map<String, Kit> KIT_MAP = new HashMap<>();
     private static File kitsDir;
     private static Path userDataDir;
 
     private static Kit starterKit;
+
+    public static boolean useMySQL;
+    public static Connection conn = null;
 
     public static File getKitsDir() {
         return kitsDir;
@@ -63,7 +68,10 @@ public class KitsMod implements ModInitializer {
 
         PlayerDataManager playerDataManager = new PlayerDataManager();
 
-        ServerLifecycleEvents.SERVER_STARTING.register(KitsMod::reloadKits);
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            reloadKits(server);
+            loadDatabase();
+        });
 
         CommandRegistrationCallback.EVENT.register(KitsCommandRegistry::register);
 
@@ -93,6 +101,30 @@ public class KitsMod implements ModInitializer {
             }
         }
         CONFIG.loadOrCreateProperties();
+    }
+
+    public void loadDatabase() {
+        useMySQL = !CONFIG.mysqlUrl.getValue().isBlank();
+        if (!useMySQL) return;
+
+        LOGGER.info("Connecting to database...");
+        try {
+            String connectionString = "jdbc:mysql://" + CONFIG.mysqlUrl.getValue() + "/" + CONFIG.mysqlDatabase.getValue();
+            conn = DriverManager.getConnection(connectionString, CONFIG.mysqlUser.getValue(), CONFIG.mysqlPassword.getValue());
+
+            Statement stmt = conn.createStatement();
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS starterKits(uuid BINARY(16) NOT NULL, claimed BOOLEAN NOT NULL)");
+            stmt.execute("CREATE TABLE IF NOT EXISTS lastUsed(uuid BINARY(16) NOT NULL, kitName VARCHAR(100) NOT NULL, timestamp TIMESTAMP NOT NULL)");
+
+            LOGGER.info("Database connected.");
+        } catch (SQLException ex) {
+            LOGGER.error("SQLException: " + ex.getMessage());
+            LOGGER.error("SQLState: " + ex.getSQLState());
+            LOGGER.error("VendorError: " + ex.getErrorCode());
+
+        }
+
     }
 
     public static Stream<Map.Entry<String, Kit>> getAllKitsForPlayer(ServerPlayerEntity player) {
