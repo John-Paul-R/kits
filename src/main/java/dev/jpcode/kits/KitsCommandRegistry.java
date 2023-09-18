@@ -2,6 +2,7 @@ package dev.jpcode.kits;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -12,6 +13,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.CommandNode;
 
 import net.minecraft.command.CommandException;
@@ -216,6 +218,12 @@ public final class KitsCommandRegistry {
                 )
                 .then(literal("remove")
                     .then(argument("command", StringArgumentType.greedyString())
+                        .suggests((CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) -> {
+                            String kitName = StringArgumentType.getString(context, "kit_name");
+                            return ListSuggestion.getSuggestionsBuilder(builder, KIT_MAP.containsKey(kitName)
+                                ? KIT_MAP.get(kitName).commands()
+                                : new ArrayList<>());
+                        })
                         .executes(KitCommandsManagerCommand::removeCommandFromKit)
                     )
                 )
