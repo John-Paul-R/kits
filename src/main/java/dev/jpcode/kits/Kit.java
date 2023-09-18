@@ -1,7 +1,6 @@
 package dev.jpcode.kits;
 
-import java.util.LinkedList;
-import java.util.Objects;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
@@ -19,14 +18,15 @@ public class Kit {
     private final KitInventory inventory;
     private final long cooldown;
     private @Nullable Item displayItem;
-    private @Nullable LinkedList<String> commands;
+    private ArrayList<String> commands;
 
     public Kit(KitInventory inventory, long cooldown) {
         this.inventory = inventory;
         this.cooldown = cooldown;
+        commands = new ArrayList<>();
     }
 
-    public Kit(KitInventory inventory, long cooldown, @Nullable Item displayItem, @Nullable LinkedList<String> commands) {
+    public Kit(KitInventory inventory, long cooldown, @Nullable Item displayItem, ArrayList<String> commands) {
         this.inventory = inventory;
         this.cooldown = cooldown;
         this.displayItem = displayItem;
@@ -49,20 +49,18 @@ public class Kit {
         this.displayItem = item;
     }
 
-    public Optional<LinkedList<String>> commands() {
-        return Optional.ofNullable(commands);
+    public ArrayList<String> commands() {
+        return commands;
     }
 
     public boolean addCommand(String command) {
-        if (commands != null && commands.contains(command)) return false;
-        if (commands == null) this.commands = new LinkedList<>();
+        if (commands.contains(command)) return false;
         this.commands.add(command);
         return true;
     }
 
     public boolean removeCommand(String command) {
-        if (commands().isEmpty() || !Objects.requireNonNull(commands).contains(command)) return false;
-        if (commands.size() == 1) commands = null;
+        if (commands().isEmpty() || !commands.contains(command)) return false;
         else commands.remove(command);
         return true;
     }
@@ -82,9 +80,9 @@ public class Kit {
                 StorageKey.DISPLAY_ITEM,
                 Registries.ITEM.getKey(this.displayItem().get()).get().getValue().toString());
         }
-        if (this.commands().isPresent()) {
+        if (!commands.isEmpty()) {
             NbtList list = new NbtList();
-            for (String command : Objects.requireNonNull(commands)) {
+            for (String command : commands) {
                 list.add(NbtString.of(command));
             }
             root.put(StorageKey.COMMANDS, list);
@@ -100,9 +98,9 @@ public class Kit {
         var kitDisplayItem = kitNbt.contains(StorageKey.DISPLAY_ITEM)
             ? Registries.ITEM.get(new Identifier(kitNbt.getString(StorageKey.DISPLAY_ITEM)))
             : null;
-        LinkedList<String> commands = kitNbt.contains(StorageKey.COMMANDS)
-            ? new LinkedList<>(kitNbt.getList(StorageKey.COMMANDS, NbtElement.STRING_TYPE).stream().map(NbtElement::asString).toList())
-            : null;
+        ArrayList<String> commands = kitNbt.contains(StorageKey.COMMANDS)
+            ? new ArrayList<>(kitNbt.getList(StorageKey.COMMANDS, NbtElement.STRING_TYPE).stream().map(NbtElement::asString).toList())
+            : new ArrayList<>();
 
         return new Kit(kitInventory, cooldown, kitDisplayItem, commands);
     }

@@ -1,6 +1,6 @@
 package dev.jpcode.kits;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Objects;
 
 import net.minecraft.server.MinecraftServer;
@@ -15,7 +15,7 @@ public final class KitUtil {
         InventoryUtil.offerAllCopies(kit.inventory(), player.getInventory());
     }
 
-    public static void runCommands(ServerPlayerEntity player, LinkedList<String> commands) {
+    public static void runCommands(ServerPlayerEntity player, ArrayList<String> commands) {
         MinecraftServer server = player.getServer();
         CommandManager commandManager = Objects.requireNonNull(server).getCommandManager();
         for (String command : commands) {

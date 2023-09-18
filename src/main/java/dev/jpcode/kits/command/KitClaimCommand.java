@@ -54,7 +54,7 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
         PlayerInventory playerInventory = player.getInventory();
         playerData.useKit(kitName);
         offerAllCopies(kit.inventory(), playerInventory);
-        if (kit.commands().isPresent()) runCommands(player, kit.commands().get());
+        if (!kit.commands().isEmpty()) runCommands(player, kit.commands());
 
         commandSource.sendFeedback(() ->
             Text.of(String.format("Successfully claimed kit '%s'!", kitName)),

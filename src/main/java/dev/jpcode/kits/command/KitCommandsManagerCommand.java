@@ -25,12 +25,11 @@ public final class KitCommandsManagerCommand {
         String kitName = StringArgumentType.getString(context, "kit_name");
         ServerCommandSource source = context.getSource();
         Kit kit = getKit(kitName);
-        if (kit == null) return 0;
 
         MutableText message = Text.literal(String.format("Kit '%s'", kitName));
-        if (kit.commands().isPresent()) {
+        if (!kit.commands().isEmpty()) {
             message.append(" (click a command to remove)");
-            List<String> commands = kit.commands().get();
+            List<String> commands = kit.commands();
             for (int i = 1; i <= commands.size(); i++) {
                 String command = commands.get(i - 1);
                 message.append(Text.literal(String.format("\n#%d: %s", i, command))
@@ -49,10 +48,9 @@ public final class KitCommandsManagerCommand {
         String kitName = StringArgumentType.getString(context, "kit_name");
         ServerCommandSource source = context.getSource();
         Kit kit = getKit(kitName);
-        if (kit == null) return 0;
 
         String command = StringArgumentType.getString(context, "command")
-            .replaceFirst("^/+", ""); // remove any slashes at the start
+            .replaceFirst("^/", ""); // remove first slash at the start
 
         try {
             boolean added = kit.addCommand(command);
@@ -71,13 +69,12 @@ public final class KitCommandsManagerCommand {
         String kitName = StringArgumentType.getString(context, "kit_name");
         ServerCommandSource source = context.getSource();
         Kit kit = getKit(kitName);
-        if (kit == null) return 0;
 
         String command = StringArgumentType.getString(context, "command");
 
         try {
             boolean existed = kit.removeCommand(command);
-            if (!existed) throw new CommandException(Text.literal("No command with that index."));
+            if (!existed) throw new CommandException(Text.literal("That command is not in this kit."));
             saveKit(kitName, kit);
             source.sendFeedback(() ->
                     Text.literal(String.format("Removed command \"%s\" from kit '%s'. (click to re-add)", command, kitName))
@@ -92,7 +89,7 @@ public final class KitCommandsManagerCommand {
 
     private static Kit getKit(String kitName) {
         if (!KIT_MAP.containsKey(kitName)) {
-            throw new CommandException(Text.literal(String.format("kit '%s' does not exist", kitName)));
+            throw new CommandException(Text.literal(String.format("Kit '%s' does not exist", kitName)));
         }
         return KIT_MAP.get(kitName);
     }
