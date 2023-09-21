@@ -1,11 +1,11 @@
 package dev.jpcode.kits.access;
 
-import dev.jpcode.kits.data.IPlayerKitData;
+import dev.jpcode.kits.data.PlayerKitUsageData;
 
 public interface ServerPlayerEntityAccess {
 
-    IPlayerKitData kits$getPlayerData();
+    PlayerKitUsageData kits$getPlayerData();
 
-    void kits$setPlayerData(IPlayerKitData playerData);
+    void kits$setPlayerData(PlayerKitUsageData playerData);
 
 }

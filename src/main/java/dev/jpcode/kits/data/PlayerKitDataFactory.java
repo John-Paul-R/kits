@@ -19,25 +19,24 @@ public final class PlayerKitDataFactory {
 
     private PlayerKitDataFactory() {}
 
-    public static IPlayerKitData create(ServerPlayerEntity player) {
-        if (KitsMod.useMySQL) {
-            return new MySQLPlayerKitData(player);
-        }
-
+    public static PlayerKitUsageData create(ServerPlayerEntity player) {
         File saveFile = getPlayerDataFile(player);
-        PlayerKitData pData = new PlayerKitData(player, saveFile);
+
+        PlayerKitUsageData playerData = new PlayerKitUsageData(player, saveFile,
+            KitsMod.CONFIG.starterKitStorageLocation.getValue() == StorageLocation.Local ? new NbtStarterKitStorage() : new MySQLStarterKitStorage(player),
+            KitsMod.CONFIG.kitCooldownStorageLocation.getValue() == StorageLocation.Local ? new NbtKitCooldownStorage() : new MySQLKitCooldownStorage(player));
+
         if (Files.exists(saveFile.toPath()) && saveFile.length() != 0) {
             try {
                 NbtCompound nbtCompound = NbtIo.readCompressed(new FileInputStream(saveFile));
-                pData.fromNbt(nbtCompound);
+                playerData.fromNbt(nbtCompound);
 
             } catch (IOException e) {
                 KitsMod.LOGGER.warn("Failed to load kits player data for {" + player.getName().getString() + "}");
                 e.printStackTrace();
             }
         }
-        pData.markDirty();
-        return pData;
+        return playerData;
     }
 
     private static File getPlayerDataFile(ServerPlayerEntity player) {

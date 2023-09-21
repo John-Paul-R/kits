@@ -14,7 +14,7 @@ import net.minecraft.util.Util;
 import dev.jpcode.kits.Kit;
 import dev.jpcode.kits.KitPerms;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
-import dev.jpcode.kits.data.IPlayerKitData;
+import dev.jpcode.kits.data.PlayerKitUsageData;
 import dev.jpcode.kits.util.TimeUtil;
 
 import static dev.jpcode.kits.KitsMod.KIT_MAP;
@@ -28,7 +28,7 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
     }
 
     public static int exec(ServerPlayerEntity player, String kitName) {
-        IPlayerKitData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
+        PlayerKitUsageData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         var commandSource = player.getCommandSource();
 
         Kit kit = KIT_MAP.get(kitName);

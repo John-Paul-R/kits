@@ -16,7 +16,7 @@ import dev.jpcode.kits.util.KitUtil;
 
 public class PlayerDataManager {
 
-    private final LinkedHashMap<UUID, IPlayerKitData> dataMap;
+    private final LinkedHashMap<UUID, PlayerKitUsageData> dataMap;
     private static PlayerDataManager instance;
 
     public PlayerDataManager() {
@@ -36,7 +36,7 @@ public class PlayerDataManager {
     }
 
     public static void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player) {
-        IPlayerKitData playerData = instance.addPlayer(player);
+        PlayerKitUsageData playerData = instance.addPlayer(player);
         ((ServerPlayerEntityAccess) player).kits$setPlayerData(playerData);
 
 //        // Detect 1st-join
@@ -51,7 +51,7 @@ public class PlayerDataManager {
     }
 
     private static void onPlayerConnectTail(ClientConnection connection, ServerPlayerEntity player) {
-        IPlayerKitData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
+        PlayerKitUsageData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         // Detect if player has gotten starter kit
         if (!playerData.hasReceivedStarterKit()) {
             Kit starterKit = KitsMod.getStarterKit();
@@ -69,18 +69,18 @@ public class PlayerDataManager {
     public static void onPlayerLeave(ServerPlayerEntity player) {
         // Auto-saving should be handled by WorldSaveHandlerMixin. (PlayerData saves when MC server saves players)
         instance.unloadPlayerData(player);
-        IPlayerKitData playerKitData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        if (playerKitData instanceof PlayerKitData saveAble) saveAble.save();
+        PlayerKitUsageData playerKitData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
+        playerKitData.save();
     }
 
     private static void onPlayerRespawn(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {
-        IPlayerKitData pData = ((ServerPlayerEntityAccess) oldPlayerEntity).kits$getPlayerData();
+        PlayerKitUsageData pData = ((ServerPlayerEntityAccess) oldPlayerEntity).kits$getPlayerData();
         pData.setPlayer(newPlayerEntity);
         ((ServerPlayerEntityAccess) newPlayerEntity).kits$setPlayerData(pData);
     }
 
-    public IPlayerKitData addPlayer(ServerPlayerEntity player) {
-        IPlayerKitData playerData = PlayerKitDataFactory.create(player);
+    public PlayerKitUsageData addPlayer(ServerPlayerEntity player) {
+        PlayerKitUsageData playerData = PlayerKitDataFactory.create(player);
         dataMap.put(player.getUuid(), playerData);
         return playerData;
     }

@@ -1,7 +1,10 @@
 package dev.jpcode.kits.data;
 
 import java.nio.ByteBuffer;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.UUID;
 
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -9,13 +12,14 @@ import net.minecraft.util.Util;
 
 import dev.jpcode.kits.KitsMod;
 
-public class MySQLPlayerKitData implements IPlayerKitData {
+public class MySQLKitCooldownStorage implements KitCooldownStorageProvider {
     private ServerPlayerEntity player;
 
-    public MySQLPlayerKitData(ServerPlayerEntity player) {
+    public MySQLKitCooldownStorage(ServerPlayerEntity player) {
         this.player = player;
     }
 
+    @Override
     public void useKit(String kitName) {
         try {
             PreparedStatement pStmt = KitsMod.conn.prepareStatement("SELECT timestamp FROM lastUsed WHERE uuid = ? AND kitName = ?");
@@ -47,6 +51,7 @@ public class MySQLPlayerKitData implements IPlayerKitData {
         }
     }
 
+    @Override
     public long getKitUsedTime(String kitName) {
         try {
             PreparedStatement pStmt = KitsMod.conn.prepareStatement("SELECT timestamp FROM lastUsed WHERE uuid = ? AND kitName = ?");
@@ -70,55 +75,7 @@ public class MySQLPlayerKitData implements IPlayerKitData {
         }
     }
 
-    public boolean hasReceivedStarterKit() {
-        try {
-            PreparedStatement pStmt = KitsMod.conn.prepareStatement("SELECT claimed FROM starterkits WHERE uuid = ?");
-            pStmt.setBytes(1, asBytes(player.getUuid()));
-
-            pStmt.execute();
-            ResultSet rs = pStmt.getResultSet();
-
-            if (rs.next()) { // true if there is a row
-                return rs.getBoolean("claimed");
-            } else {
-                return false;
-            }
-        } catch (SQLException ex) {
-            KitsMod.LOGGER.error("SQLException: " + ex.getMessage());
-            KitsMod.LOGGER.error("SQLState: " + ex.getSQLState());
-            KitsMod.LOGGER.error("VendorError: " + ex.getErrorCode());
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public void setHasReceivedStarterKit(boolean hasReceivedStarterKit) {
-        try {
-            PreparedStatement pStmt = KitsMod.conn.prepareStatement("SELECT claimed FROM starterkits WHERE uuid = ?");
-            pStmt.setBytes(1, asBytes(player.getUuid()));
-
-            pStmt.execute();
-            ResultSet rs = pStmt.getResultSet();
-
-            if (rs.next()) { // true if there is a row
-                pStmt = KitsMod.conn.prepareStatement("UPDATE starterkits SET claimed = ? WHERE uuid = ?");
-                pStmt.setBytes(2, asBytes(player.getUuid()));
-                pStmt.setBoolean(1, hasReceivedStarterKit);
-            } else {
-                pStmt = KitsMod.conn.prepareStatement("INSERT INTO starterkits(uuid, claimed) values(?, ?)");
-                pStmt.setBytes(1, asBytes(player.getUuid()));
-                pStmt.setBoolean(2, hasReceivedStarterKit);
-            }
-
-            pStmt.execute();
-
-        } catch (SQLException ex) {
-            KitsMod.LOGGER.error("SQLException: " + ex.getMessage());
-            KitsMod.LOGGER.error("SQLState: " + ex.getSQLState());
-            KitsMod.LOGGER.error("VendorError: " + ex.getErrorCode());
-            throw new RuntimeException(ex);
-        }
-    }
-
+    @Override
     public void resetKitCooldown(String kitName) {
         try {
             PreparedStatement pStmt = KitsMod.conn.prepareStatement("DELETE FROM lastused WHERE uuid = ? AND kitName = ?");
@@ -134,6 +91,7 @@ public class MySQLPlayerKitData implements IPlayerKitData {
         }
     }
 
+    @Override
     public void resetAllKits() {
         try {
             PreparedStatement pStmt = KitsMod.conn.prepareStatement("DELETE FROM lastused WHERE uuid = ?");
@@ -148,12 +106,13 @@ public class MySQLPlayerKitData implements IPlayerKitData {
         }
     }
 
+    @Override
     public void setPlayer(ServerPlayerEntity player) {
         this.player = player;
     }
 
     // stolen from Brice Roncace https://stackoverflow.com/a/29836273/9080495
-    private static byte[] asBytes(UUID uuid) {
+    public static byte[] asBytes(UUID uuid) {
         ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
         bb.putLong(uuid.getMostSignificantBits());
         bb.putLong(uuid.getLeastSignificantBits());
