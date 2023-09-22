@@ -1,4 +1,4 @@
-package dev.jpcode.kits;
+package dev.jpcode.kits.data;
 
 import java.io.File;
 

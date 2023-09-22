@@ -4,21 +4,21 @@ import org.spongepowered.asm.mixin.Mixin;
 
 import net.minecraft.server.network.ServerPlayerEntity;
 
-import dev.jpcode.kits.PlayerKitData;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
+import dev.jpcode.kits.data.PlayerKitUsageData;
 
 @Mixin(ServerPlayerEntity.class)
 public class ServerPlayerEntityMixin implements ServerPlayerEntityAccess {
 
-    private PlayerKitData kits$playerData;
+    private PlayerKitUsageData kits$playerData;
 
     @Override
-    public PlayerKitData kits$getPlayerData() {
+    public PlayerKitUsageData kits$getPlayerData() {
         return this.kits$playerData;
     }
 
     @Override
-    public void kits$setPlayerData(PlayerKitData playerData) {
+    public void kits$setPlayerData(PlayerKitUsageData playerData) {
         this.kits$playerData = playerData;
     }
 }

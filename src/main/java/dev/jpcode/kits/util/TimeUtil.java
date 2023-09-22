@@ -1,4 +1,4 @@
-package dev.jpcode.kits;
+package dev.jpcode.kits.util;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,6 +11,8 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import net.minecraft.server.command.ServerCommandSource;
+
+import dev.jpcode.kits.ListSuggestion;
 
 public final class TimeUtil {
 

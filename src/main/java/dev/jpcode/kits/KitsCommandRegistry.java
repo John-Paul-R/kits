@@ -31,6 +31,7 @@ import net.minecraft.util.Util;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.command.KitClaimCommand;
+import dev.jpcode.kits.util.TimeUtil;
 
 import static dev.jpcode.kits.KitsMod.KIT_MAP;
 import static dev.jpcode.kits.KitsMod.getAllKitsForPlayer;
@@ -157,6 +158,7 @@ public final class KitsCommandRegistry {
             .requires(Permissions.require("kits.manage", 4))
             .executes(context -> {
                 KitsMod.reloadKits(context.getSource().getServer());
+                context.getSource().sendFeedback(() -> Text.literal("Kits reloaded.\nTo change database configuration, restart the server."), true);
                 return 1;
             }).build()
         );

@@ -1,11 +1,11 @@
 package dev.jpcode.kits.access;
 
-import dev.jpcode.kits.PlayerKitData;
+import dev.jpcode.kits.data.PlayerKitUsageData;
 
 public interface ServerPlayerEntityAccess {
 
-    PlayerKitData kits$getPlayerData();
+    PlayerKitUsageData kits$getPlayerData();
 
-    void kits$setPlayerData(PlayerKitData playerData);
+    void kits$setPlayerData(PlayerKitUsageData playerData);
 
 }

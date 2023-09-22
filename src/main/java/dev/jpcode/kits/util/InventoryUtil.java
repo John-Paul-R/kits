@@ -1,6 +1,8 @@
-package dev.jpcode.kits;
+package dev.jpcode.kits.util;
 
 import net.minecraft.entity.player.PlayerInventory;
+
+import dev.jpcode.kits.KitInventory;
 
 public final class InventoryUtil {
 

@@ -1,4 +1,4 @@
-package dev.jpcode.kits;
+package dev.jpcode.kits.data;
 
 import java.util.LinkedHashMap;
 import java.util.UUID;
@@ -6,14 +6,17 @@ import java.util.UUID;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+import dev.jpcode.kits.Kit;
+import dev.jpcode.kits.KitsMod;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.events.PlayerConnectCallback;
 import dev.jpcode.kits.events.PlayerLeaveCallback;
 import dev.jpcode.kits.events.PlayerRespawnCallback;
+import dev.jpcode.kits.util.KitUtil;
 
 public class PlayerDataManager {
 
-    private final LinkedHashMap<UUID, PlayerKitData> dataMap;
+    private final LinkedHashMap<UUID, PlayerKitUsageData> dataMap;
     private static PlayerDataManager instance;
 
     public PlayerDataManager() {
@@ -33,7 +36,7 @@ public class PlayerDataManager {
     }
 
     public static void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player) {
-        PlayerKitData playerData = instance.addPlayer(player);
+        PlayerKitUsageData playerData = instance.addPlayer(player);
         ((ServerPlayerEntityAccess) player).kits$setPlayerData(playerData);
 
 //        // Detect 1st-join
@@ -48,7 +51,7 @@ public class PlayerDataManager {
     }
 
     private static void onPlayerConnectTail(ClientConnection connection, ServerPlayerEntity player) {
-        PlayerKitData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
+        PlayerKitUsageData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         // Detect if player has gotten starter kit
         if (!playerData.hasReceivedStarterKit()) {
             Kit starterKit = KitsMod.getStarterKit();
@@ -66,27 +69,19 @@ public class PlayerDataManager {
     public static void onPlayerLeave(ServerPlayerEntity player) {
         // Auto-saving should be handled by WorldSaveHandlerMixin. (PlayerData saves when MC server saves players)
         instance.unloadPlayerData(player);
-        ((ServerPlayerEntityAccess) player).kits$getPlayerData().save();
+        PlayerKitUsageData playerKitData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
+        playerKitData.save();
     }
 
     private static void onPlayerRespawn(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {
-        PlayerKitData pData = ((ServerPlayerEntityAccess) oldPlayerEntity).kits$getPlayerData();
+        PlayerKitUsageData pData = ((ServerPlayerEntityAccess) oldPlayerEntity).kits$getPlayerData();
         pData.setPlayer(newPlayerEntity);
         ((ServerPlayerEntityAccess) newPlayerEntity).kits$setPlayerData(pData);
     }
 
-    public PlayerKitData addPlayer(ServerPlayerEntity player) {
-        PlayerKitData playerData = PlayerKitDataFactory.create(player);
+    public PlayerKitUsageData addPlayer(ServerPlayerEntity player) {
+        PlayerKitUsageData playerData = PlayerKitDataFactory.create(player);
         dataMap.put(player.getUuid(), playerData);
-        return playerData;
-    }
-
-    public PlayerData getPlayerData(ServerPlayerEntity player) {
-        PlayerData playerData = dataMap.get(player.getUuid());
-
-        if (playerData == null) {
-            throw new NullPointerException(String.format("dataMap returned null for player with uuid %s", player.getUuid().toString()));
-        }
         return playerData;
     }
 
