@@ -9,7 +9,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.events.PlayerConnectCallback;
 import dev.jpcode.kits.events.PlayerLeaveCallback;
-import dev.jpcode.kits.events.PlayerRespawnCallback;
 
 public class PlayerDataManager {
 
@@ -29,7 +28,6 @@ public class PlayerDataManager {
         PlayerConnectCallback.EVENT_HEAD.register(PlayerDataManager::onPlayerConnect);
         PlayerConnectCallback.EVENT_RETURN.register(PlayerDataManager::onPlayerConnectTail);
         PlayerLeaveCallback.EVENT.register(PlayerDataManager::onPlayerLeave);
-        PlayerRespawnCallback.EVENT.register(PlayerDataManager::onPlayerRespawn);
     }
 
     public static void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player) {
@@ -73,10 +71,13 @@ public class PlayerDataManager {
         ((ServerPlayerEntityAccess) player).kits$getPlayerData().save();
     }
 
-    private static void onPlayerRespawn(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {
-        PlayerKitData pData = ((ServerPlayerEntityAccess) oldPlayerEntity).kits$getPlayerData();
-        pData.setPlayer(newPlayerEntity);
-        ((ServerPlayerEntityAccess) newPlayerEntity).kits$setPlayerData(pData);
+    public static void handlePlayerDataRespawnSync(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {
+        var oldPlayerAccess = ((ServerPlayerEntityAccess) oldPlayerEntity);
+        var newPlayerAccess = ((ServerPlayerEntityAccess) newPlayerEntity);
+
+        PlayerKitData playerData = oldPlayerAccess.kits$getPlayerData();
+        playerData.setPlayer(newPlayerEntity);
+        newPlayerAccess.kits$setPlayerData(playerData);
     }
 
     public PlayerKitData addPlayer(ServerPlayerEntity player) {
