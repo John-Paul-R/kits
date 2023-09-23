@@ -76,8 +76,12 @@ public class KitsMod implements ModInitializer {
         userDataDir = server.getSavePath(WorldSavePath.ROOT).resolve("kits_user_data");
 
         // if the dir was not just created, load all kits from dir.
-        if (!kitsDir.mkdir()) {
+        if (!kitsDir.mkdirs()) {
             File[] kitFiles = kitsDir.listFiles();
+            if (kitFiles == null) {
+                throw new IllegalStateException(
+                    String.format("Failed to list files in the kits directory ('%s')",  kitsDir.getPath()));
+            }
             for (File kitFile : kitFiles) {
                 try {
                     LOGGER.info(String.format("Loading kit '%s'", kitFile.getName()));
@@ -85,9 +89,7 @@ public class KitsMod implements ModInitializer {
                     String fileName = kitFile.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
                     KIT_MAP.put(kitName, Kit.fromNbt(kitNbt));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (NullPointerException e) {
+                } catch (IOException | NullPointerException e) {
                     e.printStackTrace();
                 }
             }
