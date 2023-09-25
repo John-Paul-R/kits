@@ -39,15 +39,20 @@ public abstract class PlayerManagerMixin {
     }
 
     @SuppressWarnings("checkstyle:NoWhitespaceBefore")
-    @Inject(method = "respawnPlayer", at = @At(
-        value = "INVOKE",
-        // This target is near-immediately after the new ServerPlayerEntity is
-        // created. This lets us update the EC PlayerData, sooner, might be
-        // before the new ServerPlayerEntity is fully initialized.
-        target = "Lnet/minecraft/server/network/ServerPlayerEntity;copyFrom(Lnet/minecraft/server/network/ServerPlayerEntity;Z)V"
-    ), locals = LocalCapture.CAPTURE_FAILHARD)
+    @Inject(
+        method = "respawnPlayer",
+        at = @At(
+            value = "INVOKE",
+            // This target is near-immediately after the new ServerPlayerEntity is
+            // created. This lets us update the EC PlayerData, sooner, might be
+            // before the new ServerPlayerEntity is fully initialized.
+            target = "Lnet/minecraft/server/network/ServerPlayerEntity;copyFrom(Lnet/minecraft/server/network/ServerPlayerEntity;Z)V"
+        ),
+        locals = LocalCapture.CAPTURE_FAILHARD)
     public void onRespawnPlayer(
-        ServerPlayerEntity oldServerPlayerEntity, boolean alive, CallbackInfoReturnable<ServerPlayerEntity> cir
+        ServerPlayerEntity oldServerPlayerEntity
+        , boolean alive
+        , CallbackInfoReturnable<ServerPlayerEntity> cir
         , BlockPos blockPos
         , float f
         , boolean bl
