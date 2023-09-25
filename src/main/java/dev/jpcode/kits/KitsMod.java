@@ -80,7 +80,7 @@ public class KitsMod implements ModInitializer {
             File[] kitFiles = kitsDir.listFiles();
             if (kitFiles == null) {
                 throw new IllegalStateException(
-                    String.format("Failed to list files in the kits directory ('%s')",  kitsDir.getPath()));
+                    String.format("Failed to list files in the kits directory ('%s')", kitsDir.getPath()));
             }
             for (File kitFile : kitFiles) {
                 try {

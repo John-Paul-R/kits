@@ -84,8 +84,9 @@ allprojects {
 
     // Perform linting using Checkstyle
     checkstyle {
-        configFile rootProject.file('.checkstyle.xml')
-        toolVersion project.checkstyle_version
+        // use one common config file for all subprojects
+        configFile = project(':').file('.checkstyle.xml')
+        configProperties = [ "suppressionFile" : project(':').file('.checkstyle-suppressions.xml')]
     }
 
     // Add any additional repositories
