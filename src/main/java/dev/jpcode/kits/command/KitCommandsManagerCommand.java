@@ -40,7 +40,7 @@ public final class KitCommandsManagerCommand {
             message.append("\nDoes not have any commands");
         }
 
-        source.sendFeedback(() -> message, false);
+        source.sendFeedback(message, false);
         return 1;
     }
 
@@ -56,8 +56,8 @@ public final class KitCommandsManagerCommand {
             boolean added = kit.addCommand(command);
             if (!added) throw new CommandException(Text.literal("Command already exists in this kit."));
             saveKit(kitName, kit);
-            source.sendFeedback(() ->
-                    Text.literal(String.format("Added command \"%s\" to kit '%s'", command, kitName)),
+            source.sendFeedback(
+                Text.literal(String.format("Added command \"%s\" to kit '%s'", command, kitName)),
                 true);
         } catch (IOException e) {
             throw new CommandException(Text.literal("Failed to save kit."));
@@ -76,10 +76,10 @@ public final class KitCommandsManagerCommand {
             boolean existed = kit.removeCommand(command);
             if (!existed) throw new CommandException(Text.literal("That command is not in this kit."));
             saveKit(kitName, kit);
-            source.sendFeedback(() ->
-                    Text.literal(String.format("Removed command \"%s\" from kit '%s'. (click to re-add)", command, kitName))
-                        .setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                            String.format("/kit commands %s add %s", kitName, command)))),
+            source.sendFeedback(
+                Text.literal(String.format("Removed command \"%s\" from kit '%s'. (click to re-add)", command, kitName))
+                    .setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
+                        String.format("/kit commands %s add %s", kitName, command)))),
                 true);
         } catch (IOException e) {
             throw new CommandException(Text.literal("Failed to save kit."));
