@@ -15,4 +15,10 @@ public final class KitPerms {
         return Permissions.check(source, "kits.claim." + kitName, 4);
     }
 
+    public static Func<idk, boolean> require(String permissionNode, int defaultRequireLevel) {
+        if (!CONFIG.usePermissions) {
+            return true;
+        }
+        return Permissions.require(permissionNode, defaultRequireLevel);
+    }
 }

@@ -10,6 +10,8 @@ public final class KitsConfig extends Config {
     public final Option<String> starterKit = new Option<>("starter_kit", "", String::valueOf);
     @ConfigOption
     public final Option<Boolean> starterKitSetCooldown = new Option<>("starter_kit_set_cooldown", true, Boolean::getBoolean);
+    @ConfigOption
+    public final Option<Boolean> usePermissions = new Option<>("use_permissions", true, Boolean::getBoolean);
 
     public KitsConfig(Path savePath, String displayName, String documentationLink) {
         super(savePath, displayName, documentationLink);
