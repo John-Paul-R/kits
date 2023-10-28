@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -24,12 +25,12 @@ import dev.jpcode.kits.events.PlayerRespawnCallback;
 public abstract class PlayerManagerMixin {
 
     @Inject(method = "onPlayerConnect", at = @At("HEAD"))
-    public void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo callbackInfo) {
+    public void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, ConnectedClientData clientData, CallbackInfo ci) {
         PlayerConnectCallback.EVENT_HEAD.invoker().onPlayerConnect(connection, player);
     }
 
     @Inject(method = "onPlayerConnect", at = @At("RETURN"))
-    public void onPlayerConnectTail(ClientConnection connection, ServerPlayerEntity player, CallbackInfo callbackInfo) {
+    public void onPlayerConnectTail(ClientConnection connection, ServerPlayerEntity player, ConnectedClientData clientData, CallbackInfo ci) {
         PlayerConnectCallback.EVENT_RETURN.invoker().onPlayerConnect(connection, player);
     }
 
@@ -66,7 +67,7 @@ public abstract class PlayerManagerMixin {
 
     @Inject(method = "respawnPlayer", at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/World;getLevelProperties()Lnet/minecraft/world/WorldProperties;"
+            target = "Lnet/minecraft/server/world/ServerWorld;getLevelProperties()Lnet/minecraft/world/WorldProperties;"
         ), locals = LocalCapture.CAPTURE_FAILHARD)
     public void onRespawnPlayer(ServerPlayerEntity oldServerPlayerEntity, boolean alive, CallbackInfoReturnable<ServerPlayerEntity> cir,
                                 BlockPos blockPos,
