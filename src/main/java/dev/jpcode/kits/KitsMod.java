@@ -11,7 +11,9 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.mojang.brigadier.LiteralMessage;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
@@ -38,6 +40,7 @@ public class KitsMod implements ModInitializer {
         "https://github.com/John-Paul-R/kits/wiki/Basic-Usage"
     );
     public static final Map<String, Kit> KIT_MAP = new HashMap<String, Kit>();
+    public static final SimpleCommandExceptionType COMMAND_EXCEPTION_TYPE = new SimpleCommandExceptionType(new LiteralMessage("Kits exception"));
     private static File kitsDir;
     private static Path userDataDir;
 
@@ -85,7 +88,7 @@ public class KitsMod implements ModInitializer {
             for (File kitFile : kitFiles) {
                 try {
                     LOGGER.info(String.format("Loading kit '%s'", kitFile.getName()));
-                    NbtCompound kitNbt = NbtIo.read(kitFile);
+                    NbtCompound kitNbt = NbtIo.read(kitFile.toPath());
                     String fileName = kitFile.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
                     KIT_MAP.put(kitName, Kit.fromNbt(kitNbt));

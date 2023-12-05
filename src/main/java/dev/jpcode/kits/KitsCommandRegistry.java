@@ -16,7 +16,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.mojang.brigadier.tree.CommandNode;
 
-import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.ItemStackArgumentType;
@@ -72,7 +71,7 @@ public final class KitsCommandRegistry {
 
         NbtIo.write(
             root,
-            KitsMod.getKitsDir().toPath().resolve(String.format("%s.nbt", kitName)).toFile()
+            KitsMod.getKitsDir().toPath().resolve(String.format("%s.nbt", kitName)).toFile().toPath()
         );
     }
 
@@ -119,7 +118,7 @@ public final class KitsCommandRegistry {
                         try {
                             saveKit(kitName, existingKit);
                         } catch (IOException e) {
-                            throw new CommandException(Text.literal("Failed to save kit."));
+                            throw new KitCommandSyntaxException(Text.literal("Failed to save kit."));
                         }
                         return 0;
                     })
