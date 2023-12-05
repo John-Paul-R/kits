@@ -5,8 +5,8 @@ import java.util.List;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
-import net.minecraft.command.CommandException;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.MutableText;
@@ -14,6 +14,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 
 import dev.jpcode.kits.Kit;
+import dev.jpcode.kits.KitCommandSyntaxException;
 
 import static dev.jpcode.kits.KitsCommandRegistry.saveKit;
 import static dev.jpcode.kits.KitsMod.KIT_MAP;
@@ -21,7 +22,7 @@ import static dev.jpcode.kits.KitsMod.KIT_MAP;
 public final class KitCommandsManagerCommand {
     private KitCommandsManagerCommand() {}
 
-    public static int listCommandsForKit(CommandContext<ServerCommandSource> context) {
+    public static int listCommandsForKit(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         String kitName = StringArgumentType.getString(context, "kit_name");
         ServerCommandSource source = context.getSource();
         Kit kit = getKit(kitName);
@@ -44,7 +45,7 @@ public final class KitCommandsManagerCommand {
         return 1;
     }
 
-    public static int addCommandToKit(CommandContext<ServerCommandSource> context) {
+    public static int addCommandToKit(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         String kitName = StringArgumentType.getString(context, "kit_name");
         ServerCommandSource source = context.getSource();
         Kit kit = getKit(kitName);
@@ -54,18 +55,18 @@ public final class KitCommandsManagerCommand {
 
         try {
             boolean added = kit.addCommand(command);
-            if (!added) throw new CommandException(Text.literal("Command already exists in this kit."));
+            if (!added) throw new KitCommandSyntaxException(Text.literal("Command already exists in this kit."));
             saveKit(kitName, kit);
             source.sendFeedback(() ->
                     Text.literal(String.format("Added command \"%s\" to kit '%s'", command, kitName)),
                 true);
         } catch (IOException e) {
-            throw new CommandException(Text.literal("Failed to save kit."));
+            throw new KitCommandSyntaxException(Text.literal("Failed to save kit."));
         }
         return 1;
     }
 
-    public static int removeCommandFromKit(CommandContext<ServerCommandSource> context) {
+    public static int removeCommandFromKit(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         String kitName = StringArgumentType.getString(context, "kit_name");
         ServerCommandSource source = context.getSource();
         Kit kit = getKit(kitName);
@@ -74,7 +75,7 @@ public final class KitCommandsManagerCommand {
 
         try {
             boolean existed = kit.removeCommand(command);
-            if (!existed) throw new CommandException(Text.literal("That command is not in this kit."));
+            if (!existed) throw new KitCommandSyntaxException(Text.literal("That command is not in this kit."));
             saveKit(kitName, kit);
             source.sendFeedback(() ->
                     Text.literal(String.format("Removed command \"%s\" from kit '%s'. (click to re-add)", command, kitName))
@@ -82,14 +83,14 @@ public final class KitCommandsManagerCommand {
                             String.format("/kit commands %s add %s", kitName, command)))),
                 true);
         } catch (IOException e) {
-            throw new CommandException(Text.literal("Failed to save kit."));
+            throw new KitCommandSyntaxException(Text.literal("Failed to save kit."));
         }
         return 1;
     }
 
-    private static Kit getKit(String kitName) {
+    private static Kit getKit(String kitName) throws CommandSyntaxException {
         if (!KIT_MAP.containsKey(kitName)) {
-            throw new CommandException(Text.literal(String.format("Kit '%s' does not exist", kitName)));
+            throw new KitCommandSyntaxException(Text.literal(String.format("Kit '%s' does not exist", kitName)));
         }
         return KIT_MAP.get(kitName);
     }
