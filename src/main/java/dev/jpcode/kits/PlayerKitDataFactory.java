@@ -10,7 +10,7 @@ import org.apache.logging.log4j.Level;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtTagSizeTracker;
+import net.minecraft.nbt.NbtSizeTracker;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 public final class PlayerKitDataFactory {
@@ -22,7 +22,7 @@ public final class PlayerKitDataFactory {
         PlayerKitData pData = new PlayerKitData(player, saveFile);
         if (Files.exists(saveFile.toPath()) && saveFile.length() != 0) {
             try {
-                NbtCompound nbtCompound = NbtIo.readCompressed(saveFile.toPath(), NbtTagSizeTracker.ofUnlimitedBytes());
+                NbtCompound nbtCompound = NbtIo.readCompressed(saveFile.toPath(), NbtSizeTracker.ofUnlimitedBytes());
                 pData.fromNbt(nbtCompound);
 
             } catch (IOException e) {
