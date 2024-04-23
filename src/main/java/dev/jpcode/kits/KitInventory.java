@@ -2,10 +2,13 @@ package dev.jpcode.kits;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 
+import net.minecraft.component.ComponentMap;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
@@ -14,6 +17,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
@@ -52,7 +56,7 @@ public class KitInventory implements Inventory {
 
     private boolean canStackAddMore(@NotNull ItemStack existingStack, ItemStack stack) {
         return !existingStack.isEmpty()
-            && ItemStack.canCombine(existingStack, stack)
+            && ItemStack.areItemsAndComponentsEqual(existingStack, stack)
             && existingStack.isStackable()
             && existingStack.getCount() < existingStack.getMaxCount()
             && existingStack.getCount() < this.getMaxCountPerStack();
@@ -70,7 +74,7 @@ public class KitInventory implements Inventory {
 
     public int getSlotWithStack(ItemStack stack) {
         for (int i = 0; i < this.main.size(); ++i) {
-            if (!this.main.get(i).isEmpty() && ItemStack.canCombine(stack, this.main.get(i))) {
+            if (!this.main.get(i).isEmpty() && ItemStack.areItemsAndComponentsEqual(stack, this.main.get(i))) {
                 return i;
             }
         }
@@ -81,7 +85,8 @@ public class KitInventory implements Inventory {
     public int indexOf(ItemStack stack) {
         for (int i = 0; i < this.main.size(); ++i) {
             ItemStack itemStack = this.main.get(i);
-            if (!this.main.get(i).isEmpty() && ItemStack.canCombine(stack, this.main.get(i)) && !this.main.get(i).isDamaged() && !itemStack.hasEnchantments() && !itemStack.hasCustomName()) {
+            if (!this.main.get(i).isEmpty() && ItemStack.areItemsAndComponentsEqual(stack, this.main.get(i)) && !this.main.get(i).isDamaged()
+                && !itemStack.hasEnchantments() && !itemStack.contains(DataComponentTypes.CUSTOM_NAME)) {
                 return i;
             }
         }
@@ -114,7 +119,7 @@ public class KitInventory implements Inventory {
             if (!this.main.get(i).isEmpty()) {
                 nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)i);
-                this.main.get(i).writeNbt(nbtCompound);
+                this.main.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound);
                 nbtList.add(nbtCompound);
             }
         }
@@ -123,7 +128,7 @@ public class KitInventory implements Inventory {
             if (!this.armor.get(i).isEmpty()) {
                 nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 100));
-                this.armor.get(i).writeNbt(nbtCompound);
+                this.armor.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound);
                 nbtList.add(nbtCompound);
             }
         }
@@ -132,7 +137,7 @@ public class KitInventory implements Inventory {
             if (!this.offHand.get(i).isEmpty()) {
                 nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 150));
-                this.offHand.get(i).writeNbt(nbtCompound);
+                this.offHand.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound);
                 nbtList.add(nbtCompound);
             }
         }
@@ -148,8 +153,9 @@ public class KitInventory implements Inventory {
         for (int i = 0; i < nbtList.size(); ++i) {
             NbtCompound nbtCompound = nbtList.getCompound(i);
             int j = nbtCompound.getByte("Slot") & 255;
-            ItemStack itemStack = ItemStack.fromNbt(nbtCompound);
-            if (!itemStack.isEmpty()) {
+            Optional<ItemStack> optionalItemStack = ItemStack.fromNbt(DynamicRegistryManager.EMPTY, nbtCompound);
+            if (optionalItemStack.isPresent()) {
+                ItemStack itemStack = optionalItemStack.get();
                 if (j >= 0 && j < this.main.size()) {
                     this.main.set(j, itemStack);
                 } else if (j >= 100 && j < this.armor.size() + 100) {
@@ -231,7 +237,7 @@ public class KitInventory implements Inventory {
     public boolean contains(ItemStack stack) {
         for (DefaultedList<ItemStack> itemStacks : this.combinedInventory) {
             for (ItemStack itemStack : itemStacks) {
-                if (!itemStack.isEmpty() && ItemStack.canCombine(itemStack, stack)) {
+                if (!itemStack.isEmpty() && ItemStack.areItemsAndComponentsEqual(itemStack, stack)) {
                     return true;
                 }
             }
@@ -339,8 +345,8 @@ public class KitInventory implements Inventory {
         ItemStack itemStack = this.getStack(slot);
         if (itemStack.isEmpty()) {
             itemStack = new ItemStack(item, 0);
-            if (stack.hasNbt()) {
-                itemStack.setNbt(stack.getNbt().copy());
+            if (stack.getComponents() != ComponentMap.EMPTY) {
+                itemStack.applyComponentsFrom(stack.getComponents());
             }
 
             this.setStack(slot, itemStack);

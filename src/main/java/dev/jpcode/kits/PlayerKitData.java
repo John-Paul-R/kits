@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Util;
 
@@ -21,7 +23,7 @@ public class PlayerKitData extends PlayerData {
     public void useKit(String kitName) {
         kitUsedTimes.put(kitName, Util.getEpochTimeMs());
         markDirty();
-        save();
+        save(DynamicRegistryManager.EMPTY);
     }
 
     public long getKitUsedTime(String kitName) {
@@ -33,7 +35,7 @@ public class PlayerKitData extends PlayerData {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapperLookup) {
 
         NbtCompound kitUsedTimesNbt = new NbtCompound();
         kitUsedTimes.forEach(kitUsedTimesNbt::putLong);
@@ -62,7 +64,7 @@ public class PlayerKitData extends PlayerData {
     public void setHasReceivedStarterKit(boolean hasReceivedStarterKit) {
         this.hasReceivedStarterKit = hasReceivedStarterKit;
         this.markDirty();
-        this.save();
+        this.save(DynamicRegistryManager.EMPTY);
     }
 
     public void resetKitCooldown(String kitName) {
