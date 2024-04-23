@@ -1,6 +1,7 @@
 package dev.jpcode.kits;
 
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.UUID;
 
 import net.minecraft.network.ClientConnection;
@@ -68,7 +69,7 @@ public class PlayerDataManager {
     public static void onPlayerLeave(ServerPlayerEntity player) {
         // Auto-saving should be handled by WorldSaveHandlerMixin. (PlayerData saves when MC server saves players)
         instance.unloadPlayerData(player);
-        ((ServerPlayerEntityAccess) player).kits$getPlayerData().save();
+        ((ServerPlayerEntityAccess) player).kits$getPlayerData().save(Objects.requireNonNull(player.getServer()).getRegistryManager());
     }
 
     public static void handlePlayerDataRespawnSync(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {

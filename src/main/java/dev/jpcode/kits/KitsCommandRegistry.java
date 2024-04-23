@@ -19,6 +19,7 @@ import com.mojang.brigadier.tree.CommandNode;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.ItemStackArgumentType;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -273,8 +274,8 @@ public final class KitsCommandRegistry {
     }
 
     private static ItemStack createKitItemStack(String kitName, ItemStack itemStack) {
-        return itemStack
-            .copy()
-            .setCustomName(Text.literal(kitName));
+        ItemStack newItemStack = itemStack.copy();
+        newItemStack.set(DataComponentTypes.CUSTOM_NAME, Text.of(kitName));
+        return newItemStack;
     }
 }

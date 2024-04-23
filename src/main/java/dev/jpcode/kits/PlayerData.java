@@ -3,6 +3,7 @@ package dev.jpcode.kits;
 import java.io.File;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
 
@@ -30,8 +31,8 @@ public abstract class PlayerData extends PersistentState {
         return this.saveFile;
     }
 
-    public void save() {
-        super.save(saveFile);
+    public void save(RegistryWrapper.WrapperLookup wrapperLookup) {
+        super.save(saveFile, wrapperLookup);
     }
 
 }
