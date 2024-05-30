@@ -18,7 +18,7 @@ public class Kit {
     private final KitInventory inventory;
     private final long cooldown;
     private @Nullable Item displayItem;
-    private ArrayList<String> commands;
+    private final ArrayList<String> commands;
 
     public Kit(KitInventory inventory, long cooldown) {
         this.inventory = inventory;
@@ -96,7 +96,7 @@ public class Kit {
         kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY, NbtElement.COMPOUND_TYPE));
         long cooldown = kitNbt.getLong(StorageKey.COOLDOWN);
         var kitDisplayItem = kitNbt.contains(StorageKey.DISPLAY_ITEM)
-            ? Registries.ITEM.get(new Identifier(kitNbt.getString(StorageKey.DISPLAY_ITEM)))
+            ? Registries.ITEM.get(Identifier.of(kitNbt.getString(StorageKey.DISPLAY_ITEM)))
             : null;
         ArrayList<String> commands = kitNbt.contains(StorageKey.COMMANDS)
             ? new ArrayList<>(kitNbt.getList(StorageKey.COMMANDS, NbtElement.STRING_TYPE).stream().map(NbtElement::asString).toList())

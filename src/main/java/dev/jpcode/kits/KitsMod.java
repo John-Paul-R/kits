@@ -39,7 +39,7 @@ public class KitsMod implements ModInitializer {
         "Kits Config",
         "https://github.com/John-Paul-R/kits/wiki/Basic-Usage"
     );
-    public static final Map<String, Kit> KIT_MAP = new HashMap<String, Kit>();
+    public static final Map<String, Kit> KIT_MAP = new HashMap<>();
     public static final SimpleCommandExceptionType COMMAND_EXCEPTION_TYPE = new SimpleCommandExceptionType(new LiteralMessage("Kits exception"));
     private static File kitsDir;
     private static Path userDataDir;
@@ -64,8 +64,6 @@ public class KitsMod implements ModInitializer {
 
         KitPerms.init();
 
-        PlayerDataManager playerDataManager = new PlayerDataManager();
-
         ServerLifecycleEvents.SERVER_STARTING.register(KitsMod::reloadKits);
 
         CommandRegistrationCallback.EVENT.register(KitsCommandRegistry::register);
@@ -75,7 +73,7 @@ public class KitsMod implements ModInitializer {
 
     public static void reloadKits(MinecraftServer server) {
         KIT_MAP.clear();
-        kitsDir = server.getRunDirectory().toPath().resolve("config/kits").toFile();
+        kitsDir = server.getRunDirectory().getFileName().resolve("config/kits").toFile();
         userDataDir = server.getSavePath(WorldSavePath.ROOT).resolve("kits_user_data");
 
         // if the dir was not just created, load all kits from dir.
