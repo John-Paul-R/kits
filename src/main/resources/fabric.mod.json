@@ -30,7 +30,7 @@
     "kits.mixins.json"
   ],
   "depends": {
-    "java": ">=17",
+    "java": ">=21",
     "minecraft": "1.21.x",
     "fabricloader": ">=0.11.3",
     "fabric": "*"
