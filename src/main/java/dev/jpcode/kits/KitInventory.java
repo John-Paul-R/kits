@@ -7,7 +7,6 @@ import java.util.Optional;
 import com.google.common.collect.ImmutableList;
 import org.jetbrains.annotations.NotNull;
 
-import net.minecraft.component.ComponentMap;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -58,8 +57,7 @@ public class KitInventory implements Inventory {
         return !existingStack.isEmpty()
             && ItemStack.areItemsAndComponentsEqual(existingStack, stack)
             && existingStack.isStackable()
-            && existingStack.getCount() < existingStack.getMaxCount()
-            && existingStack.getCount() < this.getMaxCountPerStack();
+            && existingStack.getCount() < this.getMaxCount(existingStack);
     }
 
     public int getEmptySlot() {
@@ -331,44 +329,42 @@ public class KitInventory implements Inventory {
     }
 
     private int addStack(ItemStack stack) {
-        int i = this.getOccupiedSlotWithRoomForStack(stack);
-        if (i == -1) {
-            i = this.getEmptySlot();
+        int slotIdx = this.getOccupiedSlotWithRoomForStack(stack);
+        if (slotIdx == -1) {
+            slotIdx = this.getEmptySlot();
         }
 
-        return i == -1 ? stack.getCount() : this.addStack(i, stack);
+        if (slotIdx == -1) {
+            return stack.getCount();
+        }
+
+        return this.addStack(slotIdx, stack);
     }
 
-    private int addStack(int slot, ItemStack stack) {
-        Item item = stack.getItem();
-        int i = stack.getCount();
-        ItemStack itemStack = this.getStack(slot);
-        if (itemStack.isEmpty()) {
-            itemStack = new ItemStack(item, 0);
-            if (stack.getComponents() != ComponentMap.EMPTY) {
-                itemStack.applyComponentsFrom(stack.getComponents());
+    private int addStack(int slot, ItemStack incomingStack) {
+        ItemStack thisStack = this.getStack(slot);
+        if (thisStack.isEmpty()) {
+            thisStack = new ItemStack(incomingStack.getItem(), 0);
+            if (!incomingStack.getComponents().isEmpty()) {
+                thisStack.applyComponentsFrom(incomingStack.getComponents());
             }
 
-            this.setStack(slot, itemStack);
+            this.setStack(slot, thisStack);
         }
 
-        int j = i;
-        if (i > itemStack.getMaxCount() - itemStack.getCount()) {
-            j = itemStack.getMaxCount() - itemStack.getCount();
+        int incomingStackCount = incomingStack.getCount();
+        int thisStackAvailableCount = this.getMaxCount(thisStack) - thisStack.getCount();
+
+        int inventoryStackResultantCount = Math.min(incomingStackCount, thisStackAvailableCount);
+
+        if (inventoryStackResultantCount == 0) {
+            return incomingStackCount;
         }
 
-        if (j > this.getMaxCountPerStack() - itemStack.getCount()) {
-            j = this.getMaxCountPerStack() - itemStack.getCount();
-        }
-
-        if (j == 0) {
-            return i;
-        } else {
-            i -= j;
-            itemStack.increment(j);
-            itemStack.setBobbingAnimationTime(5);
-            return i;
-        }
+        incomingStackCount -= inventoryStackResultantCount;
+        thisStack.increment(inventoryStackResultantCount);
+        thisStack.setBobbingAnimationTime(5);
+        return incomingStackCount;
     }
 
     public boolean insertStack(int slot, ItemStack stack) {
