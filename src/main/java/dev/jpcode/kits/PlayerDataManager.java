@@ -22,6 +22,9 @@ public class PlayerDataManager {
     }
 
     public static PlayerDataManager getInstance() {
+        if (instance == null) {
+            instance = new PlayerDataManager();
+        }
         return instance;
     }
 
@@ -69,7 +72,8 @@ public class PlayerDataManager {
     public static void onPlayerLeave(ServerPlayerEntity player) {
         // Auto-saving should be handled by WorldSaveHandlerMixin. (PlayerData saves when MC server saves players)
         instance.unloadPlayerData(player);
-        ((ServerPlayerEntityAccess) player).kits$getPlayerData().save(Objects.requireNonNull(player.getServer()).getRegistryManager());
+        ((ServerPlayerEntityAccess) player).kits$getPlayerData()
+            .save(Objects.requireNonNull(player.getServer()).getRegistryManager());
     }
 
     public static void handlePlayerDataRespawnSync(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {
