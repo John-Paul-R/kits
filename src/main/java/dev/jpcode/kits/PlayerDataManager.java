@@ -37,16 +37,6 @@ public class PlayerDataManager {
     public static void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player) {
         PlayerKitData playerData = instance.addPlayer(player);
         ((ServerPlayerEntityAccess) player).kits$setPlayerData(playerData);
-
-//        // Detect 1st-join
-//        GameProfile gameProfile = player.getGameProfile();
-//        UserCache userCache = player.getServer().getUserCache();
-//        GameProfile gameProfile2 = userCache.getByUuid(gameProfile.getId());
-//        if (gameProfile2 == null) {
-//            // Player is new. Do first-join things...
-//
-//        }
-
     }
 
     private static void onPlayerConnectTail(ClientConnection connection, ServerPlayerEntity player) {
@@ -63,10 +53,6 @@ public class PlayerDataManager {
                     playerData.useKit(KitsMod.CONFIG.starterKit.getValue());
             }
         }
-    }
-
-    private static void onPlayerFirstJoin(ClientConnection connection, ServerPlayerEntity player) {
-
     }
 
     public static void onPlayerLeave(ServerPlayerEntity player) {
