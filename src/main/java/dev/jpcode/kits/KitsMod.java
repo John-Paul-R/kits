@@ -141,7 +141,7 @@ public class KitsMod implements ModInitializer {
     }
 
     public static void setStarterKit(String s) {
-        if (s == null) {
+        if (s == null || s.isBlank()) {
             starterKit = null;
         } else {
             starterKit = KIT_MAP.get(s);
