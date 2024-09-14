@@ -26,7 +26,7 @@ public final class PlayerKitDataFactory {
                 pData.fromNbt(nbtCompound);
 
             } catch (IOException e) {
-                KitsMod.LOGGER.warn("Failed to load kits player data for {" + player.getName().getString() + "}");
+                KitsMod.LOGGER.warn("Failed to load kits player data for {{}}", player.getName().getString());
                 e.printStackTrace();
             }
         }

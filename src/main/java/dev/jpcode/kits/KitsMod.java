@@ -88,7 +88,7 @@ public class KitsMod implements ModInitializer {
             }
             for (File kitFile : kitFiles) {
                 try {
-                    LOGGER.info(String.format("Loading kit '%s'", kitFile.getName()));
+                    LOGGER.info("Loading kit '{}'", kitFile.getName());
                     NbtCompound kitNbt = NbtIo.read(kitFile.toPath());
                     String fileName = kitFile.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
@@ -124,17 +124,18 @@ public class KitsMod implements ModInitializer {
     /**
      * Suggests existing kits that the user has permissions for.
      *
-     * @param context
-     * @param builder
      * @return suggestions for existing kits that the user has permissions for.
      */
-    public static CompletableFuture<Suggestions> suggestionProvider(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
-        ServerCommandSource source = context.getSource();
+    public static CompletableFuture<Suggestions> suggestionProvider(
+        CommandContext<ServerCommandSource> context,
+        SuggestionsBuilder builder
+    ) {
         return ListSuggestion.getSuggestionsBuilder(
             builder,
-            getAllKitsForPlayer(source.getPlayer())
+            getAllKitsForPlayer(context.getSource().getPlayer())
                 .map(Map.Entry::getKey)
-                .toList());
+                .toList()
+        );
     }
 
     public static void setStarterKit(String s) {
@@ -143,9 +144,9 @@ public class KitsMod implements ModInitializer {
         } else {
             starterKit = KIT_MAP.get(s);
             if (starterKit == null) {
-                LOGGER.warn(String.format("Provided starter kit name, '%s' could not be found.", s));
+                LOGGER.warn("Provided starter kit name, '{}' could not be found.", s);
             } else {
-                LOGGER.info(String.format("Starter kit set to '%s'", s));
+                LOGGER.info("Starter kit set to '{}'", s);
             }
         }
     }
