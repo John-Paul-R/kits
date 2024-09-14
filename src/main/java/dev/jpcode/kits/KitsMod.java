@@ -39,7 +39,7 @@ public class KitsMod implements ModInitializer {
         "Kits Config",
         "https://github.com/John-Paul-R/kits/wiki/Basic-Usage"
     );
-    public static final Map<String, Kit> KIT_MAP = new HashMap<String, Kit>();
+    public static final Map<String, Kit> KIT_MAP = new HashMap<>();
     public static final SimpleCommandExceptionType COMMAND_EXCEPTION_TYPE = new SimpleCommandExceptionType(new LiteralMessage("Kits exception"));
     private static File kitsDir;
     private static Path userDataDir;
@@ -64,7 +64,8 @@ public class KitsMod implements ModInitializer {
 
         KitPerms.init();
 
-        PlayerDataManager playerDataManager = new PlayerDataManager();
+        // static ctor to register event handlers
+        PlayerDataManager.getInstance();
 
         ServerLifecycleEvents.SERVER_STARTING.register(KitsMod::reloadKits);
 
