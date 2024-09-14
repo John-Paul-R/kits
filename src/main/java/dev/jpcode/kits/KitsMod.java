@@ -124,6 +124,8 @@ public class KitsMod implements ModInitializer {
     /**
      * Suggests existing kits that the user has permissions for.
      *
+     * @param context server command context w/ player
+     * @param builder suggestions builder
      * @return suggestions for existing kits that the user has permissions for.
      */
     public static CompletableFuture<Suggestions> suggestionProvider(
