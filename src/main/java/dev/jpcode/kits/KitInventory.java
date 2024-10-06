@@ -113,32 +113,33 @@ public class KitInventory implements Inventory {
     }
 
     public NbtList writeNbt(NbtList nbtList) {
-        int i;
-        NbtCompound nbtCompound;
-        for (i = 0; i < this.main.size(); ++i) {
+        for (int i = 0; i < this.main.size(); ++i) {
             if (!this.main.get(i).isEmpty()) {
-                nbtCompound = new NbtCompound();
+                var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)i);
-                this.main.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound);
-                nbtList.add(nbtCompound);
+                nbtList.add(
+                    this.main.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound)
+                );
             }
         }
 
-        for (i = 0; i < this.armor.size(); ++i) {
+        for (int i = 0; i < this.armor.size(); ++i) {
             if (!this.armor.get(i).isEmpty()) {
-                nbtCompound = new NbtCompound();
+                var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 100));
-                this.armor.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound);
-                nbtList.add(nbtCompound);
+                nbtList.add(
+                    this.armor.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound)
+                );
             }
         }
 
-        for (i = 0; i < this.offHand.size(); ++i) {
+        for (int i = 0; i < this.offHand.size(); ++i) {
             if (!this.offHand.get(i).isEmpty()) {
-                nbtCompound = new NbtCompound();
+                var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 150));
-                this.offHand.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound);
-                nbtList.add(nbtCompound);
+                nbtList.add(
+                    this.offHand.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound)
+                );
             }
         }
 
