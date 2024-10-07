@@ -30,6 +30,7 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
+import net.minecraft.world.World;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.command.KitClaimCommand;
@@ -55,7 +56,7 @@ public final class KitsCommandRegistry {
         KIT_MAP.put(kitName, kit);
 
         try {
-            saveKit(kitName, kit);
+            saveKit(kitName, kit, context.getSource().getWorld());
             context.getSource().sendFeedback(() ->
                 Text.of(String.format("Kit '%s' created from current inventory.", kitName)),
                 true
@@ -66,9 +67,9 @@ public final class KitsCommandRegistry {
         return 1;
     }
 
-    public static void saveKit(String kitName, Kit kit) throws IOException {
+    public static void saveKit(String kitName, Kit kit, World world) throws IOException {
         NbtCompound root = new NbtCompound();
-        kit.writeNbt(root);
+        kit.writeNbt(root, world);
 
         NbtIo.write(
             root,
@@ -117,7 +118,7 @@ public final class KitsCommandRegistry {
                         var existingKit = KIT_MAP.get(kitName);
                         existingKit.setDisplayItem(item.getItem());
                         try {
-                            saveKit(kitName, existingKit);
+                            saveKit(kitName, existingKit, context.getSource().getWorld());
                         } catch (IOException e) {
                             throw new KitCommandSyntaxException(Text.literal("Failed to save kit."));
                         }

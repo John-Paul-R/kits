@@ -22,6 +22,7 @@ import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
+import net.minecraft.world.World;
 
 public class KitInventory implements Inventory {
 
@@ -110,13 +111,13 @@ public class KitInventory implements Inventory {
 
     }
 
-    public NbtList writeNbt(NbtList nbtList) {
+    public NbtList writeNbt(NbtList nbtList, World world) {
         for (int i = 0; i < this.main.size(); ++i) {
             if (!this.main.get(i).isEmpty()) {
                 var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)i);
                 nbtList.add(
-                    this.main.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound)
+                    this.main.get(i).encode(world.getRegistryManager(), nbtCompound)
                 );
             }
         }
@@ -144,7 +145,7 @@ public class KitInventory implements Inventory {
         return nbtList;
     }
 
-    public void readNbt(NbtList nbtList) {
+    public void readNbt(NbtList nbtList, World world) {
         this.main.clear();
         this.armor.clear();
         this.offHand.clear();
@@ -152,7 +153,7 @@ public class KitInventory implements Inventory {
         for (int i = 0; i < nbtList.size(); ++i) {
             NbtCompound nbtCompound = nbtList.getCompound(i);
             int j = nbtCompound.getByte("Slot") & 255;
-            Optional<ItemStack> optionalItemStack = ItemStack.fromNbt(DynamicRegistryManager.EMPTY, nbtCompound);
+            Optional<ItemStack> optionalItemStack = ItemStack.fromNbt(world.getRegistryManager(), nbtCompound);
             if (optionalItemStack.isPresent()) {
                 ItemStack itemStack = optionalItemStack.get();
                 if (j >= 0 && j < this.main.size()) {

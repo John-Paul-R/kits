@@ -12,6 +12,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.World;
 
 public class Kit {
 
@@ -72,8 +73,8 @@ public class Kit {
         public static final String COMMANDS = "commands";
     }
 
-    public void writeNbt(NbtCompound root) {
-        root.put(StorageKey.INVENTORY, this.inventory().writeNbt(new NbtList()));
+    public void writeNbt(NbtCompound root, World world) {
+        root.put(StorageKey.INVENTORY, this.inventory().writeNbt(new NbtList(), world));
         root.putLong(StorageKey.COOLDOWN, this.cooldown());
         if (this.displayItem().isPresent()) {
             root.putString(
@@ -89,11 +90,11 @@ public class Kit {
         }
     }
 
-    public static Kit fromNbt(NbtCompound kitNbt) {
+    public static Kit fromNbt(NbtCompound kitNbt, World world) {
         var kitInventory = new KitInventory();
 
         assert kitNbt != null;
-        kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY, NbtElement.COMPOUND_TYPE));
+        kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY, NbtElement.COMPOUND_TYPE), world);
         long cooldown = kitNbt.getLong(StorageKey.COOLDOWN);
         var kitDisplayItem = kitNbt.contains(StorageKey.DISPLAY_ITEM)
             ? Registries.ITEM.get(Identifier.of(kitNbt.getString(StorageKey.DISPLAY_ITEM)))

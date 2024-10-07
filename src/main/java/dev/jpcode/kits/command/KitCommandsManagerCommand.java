@@ -56,7 +56,7 @@ public final class KitCommandsManagerCommand {
         try {
             boolean added = kit.addCommand(command);
             if (!added) throw new KitCommandSyntaxException(Text.literal("Command already exists in this kit."));
-            saveKit(kitName, kit);
+            saveKit(kitName, kit, source.getWorld());
             source.sendFeedback(() ->
                     Text.literal(String.format("Added command \"%s\" to kit '%s'", command, kitName)),
                 true);
@@ -76,7 +76,7 @@ public final class KitCommandsManagerCommand {
         try {
             boolean existed = kit.removeCommand(command);
             if (!existed) throw new KitCommandSyntaxException(Text.literal("That command is not in this kit."));
-            saveKit(kitName, kit);
+            saveKit(kitName, kit, source.getWorld());
             source.sendFeedback(() ->
                     Text.literal(String.format("Removed command \"%s\" from kit '%s'. (click to re-add)", command, kitName))
                         .setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
