@@ -67,7 +67,7 @@ public class KitsMod implements ModInitializer {
         // static ctor to register event handlers
         PlayerDataManager.getInstance();
 
-        ServerLifecycleEvents.SERVER_STARTING.register(KitsMod::reloadKits);
+        ServerLifecycleEvents.SERVER_STARTED.register(KitsMod::reloadKits);
 
         CommandRegistrationCallback.EVENT.register(KitsCommandRegistry::register);
 
@@ -92,7 +92,7 @@ public class KitsMod implements ModInitializer {
                     NbtCompound kitNbt = NbtIo.read(kitFile.toPath());
                     String fileName = kitFile.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
-                    KIT_MAP.put(kitName, Kit.fromNbt(kitNbt));
+                    KIT_MAP.put(kitName, Kit.fromNbt(kitNbt, server.getOverworld()));
                 } catch (IOException | NullPointerException e) {
                     e.printStackTrace();
                 }
