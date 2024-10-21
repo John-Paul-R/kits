@@ -117,7 +117,7 @@ public class KitInventory implements Inventory {
                 var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)i);
                 nbtList.add(
-                    this.main.get(i).encode(world.getRegistryManager(), nbtCompound)
+                    this.main.get(i).toNbt(world.getRegistryManager(), nbtCompound)
                 );
             }
         }
@@ -127,7 +127,7 @@ public class KitInventory implements Inventory {
                 var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 100));
                 nbtList.add(
-                    this.armor.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound)
+                    this.armor.get(i).toNbt(DynamicRegistryManager.EMPTY, nbtCompound)
                 );
             }
         }
@@ -137,7 +137,7 @@ public class KitInventory implements Inventory {
                 var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 150));
                 nbtList.add(
-                    this.offHand.get(i).encode(DynamicRegistryManager.EMPTY, nbtCompound)
+                    this.offHand.get(i).toNbt(DynamicRegistryManager.EMPTY, nbtCompound)
                 );
             }
         }
