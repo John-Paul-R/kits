@@ -1,8 +1,10 @@
 package dev.jpcode.kits;
 
 import java.io.File;
+import java.io.IOException;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.PersistentState;
@@ -27,12 +29,14 @@ public abstract class PlayerData extends PersistentState {
 
     public abstract void fromNbt(NbtCompound nbtCompound3);
 
-    public File getSaveFile() {
-        return this.saveFile;
-    }
-
     public void save(RegistryWrapper.WrapperLookup wrapperLookup) {
-        super.save(saveFile, wrapperLookup);
+        NbtCompound data = this.toNbt(wrapperLookup);
+
+        try {
+            NbtIo.writeCompressed(data, this.saveFile.toPath());
+        } catch (IOException e) {
+            KitsMod.LOGGER.error("Could not save data {}", this, e);
+        }
     }
 
 }
