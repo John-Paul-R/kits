@@ -240,7 +240,9 @@ public final class KitsCommandRegistry {
 
                 long currentTime = Util.getEpochTimeMs();
                 Function<Map.Entry<String, Kit>, Boolean> canUseKit = (entry) ->
-                    (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldown()) - currentTime <= 0;
+                    entry.getValue().cooldown() >= 0
+                        ? (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldown()) - currentTime <= 0
+                        : playerData.getKitUsedTime(entry.getKey()) == 0;
 
                 var simpleGuiBuilder = new SimpleGuiBuilder(ScreenHandlerType.GENERIC_9X3, false);
                 simpleGuiBuilder.setLockPlayerInventory(true);

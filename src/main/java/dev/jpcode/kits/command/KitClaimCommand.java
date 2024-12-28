@@ -34,13 +34,20 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
 
         Kit kit = KIT_MAP.get(kitName);
         long currentTime = Util.getEpochTimeMs();
-        long remainingTime = (playerData.getKitUsedTime(kitName) + kit.cooldown()) - currentTime;
+        long lastUsed = playerData.getKitUsedTime(kitName);
+        long cooldown = kit.cooldown();
+        long remainingTime = (lastUsed + cooldown) - currentTime;
 
         if (!KitPerms.checkKit(commandSource, kitName)) {
             commandSource.sendError(Text.of(String.format(
                 "Insufficient permissions for kit '%s'.",
                 kitName)));
             return -1;
+        } else if (cooldown < 0 && lastUsed != 0) {
+            commandSource.sendError(Text.of(String.format(
+                "Kit '%s' can only be claimed once.",
+                kitName)));
+            return -2;
         } else if (remainingTime > 0) {
             commandSource.sendError(Text.of(
                 String.format(
