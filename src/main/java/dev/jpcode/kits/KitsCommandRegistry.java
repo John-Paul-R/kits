@@ -36,8 +36,7 @@ import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.command.KitClaimCommand;
 import dev.jpcode.kits.command.KitCommandsManagerCommand;
 
-import static dev.jpcode.kits.KitsMod.KIT_MAP;
-import static dev.jpcode.kits.KitsMod.getAllKitsForPlayer;
+import static dev.jpcode.kits.KitsMod.*;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
@@ -244,7 +243,7 @@ public final class KitsCommandRegistry {
 
                 var simpleGuiBuilder = new SimpleGuiBuilder(ScreenHandlerType.GENERIC_9X3, false);
                 simpleGuiBuilder.setLockPlayerInventory(true);
-                simpleGuiBuilder.setTitle(Text.literal("Claim Kit"));
+                simpleGuiBuilder.setTitle(Text.literal(CONFIG.kitsMenuTitle.getValue()));
 
                 int i = 0;
                 for (var kitEntry : allPlayerKits.toList()) {
