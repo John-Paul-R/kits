@@ -3,6 +3,7 @@ package dev.jpcode.kits;
 import java.util.ArrayList;
 import java.util.Optional;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.item.Item;
@@ -68,6 +69,7 @@ public class Kit {
     }
 
     private static final class StorageKey {
+        public static final String SCHEMA_VERSION = "_schema_version";
         public static final String INVENTORY = "inventory";
         public static final String COOLDOWN = "cooldown";
         public static final String DISPLAY_ITEM = "display_item";
@@ -75,6 +77,7 @@ public class Kit {
     }
 
     public void writeNbt(NbtCompound root, World world) {
+        root.putInt(StorageKey.SCHEMA_VERSION, 1);
         root.put(StorageKey.INVENTORY, this.inventory().writeNbt(new NbtList(), world));
         root.putLong(StorageKey.COOLDOWN, this.cooldownMs());
         if (this.displayItem().isPresent()) {
@@ -91,10 +94,28 @@ public class Kit {
         }
     }
 
+    private static void handleReadVersion(@NotNull NbtCompound kitNbt) {
+
+        if (!kitNbt.contains(StorageKey.SCHEMA_VERSION)) {
+            // Upgrade version nil to v1
+            // Negative cooldowns replaced with 0, since that was the old behavior
+            var cd = kitNbt.getLong(StorageKey.COOLDOWN);
+            if (cd < 0) {
+                kitNbt.putLong(StorageKey.COOLDOWN, 0);
+            }
+
+            return;
+        }
+        var version = kitNbt.getInt(StorageKey.SCHEMA_VERSION);
+        // other version handling...
+    }
+
     public static Kit fromNbt(NbtCompound kitNbt, World world) {
         var kitInventory = new KitInventory();
 
         assert kitNbt != null;
+        handleReadVersion(kitNbt);
+
         kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY, NbtElement.COMPOUND_TYPE), world);
         long cooldown = kitNbt.getLong(StorageKey.COOLDOWN);
         var kitDisplayItem = kitNbt.contains(StorageKey.DISPLAY_ITEM)
