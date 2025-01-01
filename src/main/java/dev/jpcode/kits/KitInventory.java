@@ -16,7 +16,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
@@ -127,7 +126,7 @@ public class KitInventory implements Inventory {
                 var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 100));
                 nbtList.add(
-                    this.armor.get(i).toNbt(DynamicRegistryManager.EMPTY, nbtCompound)
+                    this.armor.get(i).toNbt(world.getRegistryManager(), nbtCompound)
                 );
             }
         }
@@ -137,7 +136,7 @@ public class KitInventory implements Inventory {
                 var nbtCompound = new NbtCompound();
                 nbtCompound.putByte("Slot", (byte)(i + 150));
                 nbtList.add(
-                    this.offHand.get(i).toNbt(DynamicRegistryManager.EMPTY, nbtCompound)
+                    this.offHand.get(i).toNbt(world.getRegistryManager(), nbtCompound)
                 );
             }
         }
