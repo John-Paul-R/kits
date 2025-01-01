@@ -17,19 +17,20 @@ import net.minecraft.world.World;
 public class Kit {
 
     private final KitInventory inventory;
-    private final long cooldown;
+    /** a negative cooldown yields a one-time use kit. */
+    private final long cooldownMs;
     private @Nullable Item displayItem;
     private final ArrayList<String> commands;
 
-    public Kit(KitInventory inventory, long cooldown) {
+    public Kit(KitInventory inventory, long cooldownMs) {
         this.inventory = inventory;
-        this.cooldown = cooldown;
+        this.cooldownMs = cooldownMs;
         commands = new ArrayList<>();
     }
 
-    public Kit(KitInventory inventory, long cooldown, @Nullable Item displayItem, ArrayList<String> commands) {
+    public Kit(KitInventory inventory, long cooldownMs, @Nullable Item displayItem, ArrayList<String> commands) {
         this.inventory = inventory;
-        this.cooldown = cooldown;
+        this.cooldownMs = cooldownMs;
         this.displayItem = displayItem;
         this.commands = commands;
     }
@@ -38,8 +39,8 @@ public class Kit {
         return inventory;
     }
 
-    public long cooldown() {
-        return cooldown;
+    public long cooldownMs() {
+        return cooldownMs;
     }
 
     public Optional<Item> displayItem() {
@@ -75,7 +76,7 @@ public class Kit {
 
     public void writeNbt(NbtCompound root, World world) {
         root.put(StorageKey.INVENTORY, this.inventory().writeNbt(new NbtList(), world));
-        root.putLong(StorageKey.COOLDOWN, this.cooldown());
+        root.putLong(StorageKey.COOLDOWN, this.cooldownMs());
         if (this.displayItem().isPresent()) {
             root.putString(
                 StorageKey.DISPLAY_ITEM,

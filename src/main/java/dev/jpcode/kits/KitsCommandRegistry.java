@@ -46,10 +46,13 @@ public final class KitsCommandRegistry {
     private KitsCommandRegistry() {
     }
 
-    static int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, long cooldown) {
+    /**
+     * @param cooldownMs if negative, creates a one-time use kit
+     */
+    static int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, long cooldownMs) {
         var kitInventory = new KitInventory();
         kitInventory.copyFrom(sourceInventory);
-        return addKit(context, kitName, new Kit(kitInventory, cooldown));
+        return addKit(context, kitName, new Kit(kitInventory, cooldownMs));
     }
 
     static int addKit(CommandContext<ServerCommandSource> context, String kitName, Kit kit) {
@@ -240,8 +243,8 @@ public final class KitsCommandRegistry {
 
                 long currentTime = Util.getEpochTimeMs();
                 Function<Map.Entry<String, Kit>, Boolean> canUseKit = (entry) ->
-                    entry.getValue().cooldown() >= 0
-                        ? (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldown()) - currentTime <= 0
+                    entry.getValue().cooldownMs() >= 0
+                        ? (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldownMs()) - currentTime <= 0
                         : playerData.getKitUsedTime(entry.getKey()) == 0;
 
                 var simpleGuiBuilder = new SimpleGuiBuilder(ScreenHandlerType.GENERIC_9X3, false);
