@@ -116,7 +116,7 @@ public class KitsMod implements ModInitializer {
 
         return getAllKitsForPlayer(player)
             .filter(entry -> {
-                long remainingTime = (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldown()) - currentTime;
+                long remainingTime = (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldownMs()) - currentTime;
                 return remainingTime <= 0;
             });
     }
