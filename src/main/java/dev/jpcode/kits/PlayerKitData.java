@@ -3,6 +3,7 @@ package dev.jpcode.kits;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.DynamicRegistryManager;
@@ -26,12 +27,22 @@ public class PlayerKitData extends PlayerData {
         save(DynamicRegistryManager.EMPTY);
     }
 
-    public long getKitUsedTime(String kitName) {
+    public Optional<Long> getKitUsedTime(String kitName) {
         try {
-            return kitUsedTimes.get(kitName);
+            return Optional.of(kitUsedTimes.get(kitName));
         } catch (NullPointerException notYetUsed) {
-            return 0;
+            return Optional.empty();
         }
+    }
+
+    public boolean isKitOnCooldownAtTime(Map.Entry<String, Kit> kit, long timeMs) {
+        var kitUsedTimeOpt = getKitUsedTime(kit.getKey());
+        var kitCooldownMs = kit.getValue().cooldownMs();
+        return
+            // kit never used, can't be on any sort of cd, even if a one-time kit
+            kitUsedTimeOpt.isEmpty()
+                // have a non-negative cd, so not a one-time kit. Do the cd math.
+                || (kitCooldownMs >= 0 && (kitUsedTimeOpt.get() + kitCooldownMs) - timeMs <= 0);
     }
 
     @Override

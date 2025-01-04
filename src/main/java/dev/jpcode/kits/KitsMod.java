@@ -115,10 +115,7 @@ public class KitsMod implements ModInitializer {
         long currentTime = Util.getEpochTimeMs();
 
         return getAllKitsForPlayer(player)
-            .filter(entry -> {
-                long remainingTime = (playerData.getKitUsedTime(entry.getKey()) + entry.getValue().cooldownMs()) - currentTime;
-                return remainingTime <= 0;
-            });
+            .filter(entry -> playerData.isKitOnCooldownAtTime(entry, currentTime));
     }
 
     /**

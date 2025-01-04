@@ -1,5 +1,7 @@
 package dev.jpcode.kits.command;
 
+import java.util.Optional;
+
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -34,16 +36,16 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
 
         Kit kit = KIT_MAP.get(kitName);
         long currentTime = Util.getEpochTimeMs();
-        long lastUsed = playerData.getKitUsedTime(kitName);
+        Optional<Long> lastUsed = playerData.getKitUsedTime(kitName);
         long cooldown = kit.cooldownMs();
-        long remainingTime = (lastUsed + cooldown) - currentTime;
+        long remainingTime = lastUsed.map(aLong -> (aLong + cooldown) - currentTime).orElse(0L);
 
         if (!KitPerms.checkKit(commandSource, kitName)) {
             commandSource.sendError(Text.of(String.format(
                 "Insufficient permissions for kit '%s'.",
                 kitName)));
             return -1;
-        } else if (cooldown < 0 && lastUsed != 0) {
+        } else if (cooldown < 0 && lastUsed.isPresent()) {
             commandSource.sendError(Text.of(String.format(
                 "Kit '%s' can only be claimed once.",
                 kitName)));
