@@ -1,5 +1,7 @@
 package dev.jpcode.kits.command;
 
+import java.util.List;
+
 import eu.pb4.sgui.api.gui.SimpleGuiBuilder;
 
 import com.mojang.brigadier.Command;
@@ -7,14 +9,18 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.LoreComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.text.Texts;
 import net.minecraft.util.Util;
 
 import dev.jpcode.kits.Kit;
+import dev.jpcode.kits.PlayerKitData;
+import dev.jpcode.kits.TimeUtil;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
 import static dev.jpcode.kits.KitsMod.CONFIG;
@@ -35,20 +41,9 @@ public class KitsCommand implements Command<ServerCommandSource> {
 
         int i = 0;
         for (var kitEntry : allPlayerKits.toList()) {
-            var canUseKit = playerData.isKitOnCooldownAtTime(kitEntry, currentTime);
-
-            var defaultItemStack = (
-                canUseKit
-                    ? kitEntry.getValue()
-                        .displayItem()
-                        .orElse(Items.EMERALD_BLOCK)
-                    : Items.GRAY_CONCRETE_POWDER
-                )
-                .getDefaultStack();
-
             simpleGuiBuilder.setSlot(
                 i++,
-                createKitItemStack(kitEntry.getKey(), kitEntry.getValue(), defaultItemStack),
+                createKitItemStack(playerData, kitEntry.getKey(), kitEntry.getValue(), currentTime),
                 (index, type, action, gui) -> {
                     if (type.isLeft) {
                         KitClaimCommand.exec(player, kitEntry.getKey());
@@ -63,9 +58,32 @@ public class KitsCommand implements Command<ServerCommandSource> {
         return Command.SINGLE_SUCCESS;
     }
 
-    private static ItemStack createKitItemStack(String kitName, Kit kit, ItemStack itemStack) {
-        ItemStack newItemStack = itemStack.copy();
+    private static ItemStack createKitItemStack(PlayerKitData playerData, String kitName, Kit kit, long currentTime) {
+        var kitCooldownRemainingMs = playerData.getKitCooldownRemainingMs(kitName, kit, currentTime);
+        var canUseKit = kitCooldownRemainingMs <= 0;
+
+        var defaultItemStack = (
+                canUseKit
+                    ? kit.displayItem().orElse(Items.EMERALD_BLOCK)
+                    : Items.GRAY_CONCRETE_POWDER
+            ).getDefaultStack();
+
+        ItemStack newItemStack = defaultItemStack.copy();
         newItemStack.set(DataComponentTypes.CUSTOM_NAME, Text.of(kitName));
+        if (kitCooldownRemainingMs > 0) {
+            newItemStack.set(
+                DataComponentTypes.LORE,
+                new LoreComponent(List.of(
+                    Texts.join(
+                        List.of(
+                            Text.of("Available in"),
+                            Text.of(TimeUtil.formatTime(kitCooldownRemainingMs, 2))
+                        ),
+                        Text.of(" ")
+                    )
+                ))
+            );
+        }
         return newItemStack;
     }
 }

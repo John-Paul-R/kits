@@ -47,7 +47,12 @@ public final class TimeUtil {
     }
 
     public static String formatTime(long millis) {
+        return formatTime(millis, Integer.MAX_VALUE);
+    }
+
+    public static String formatTime(long millis, int maxLevelOfSpecificity) {
         int i = 0;
+        int currentLevelOfSpecificity = 0;
         StringBuilder builder = new StringBuilder();
         for (Map.Entry<String, Long> entry : TIME_WEIGHTS.entrySet()) {
             String unitStr = entry.getKey();
@@ -57,6 +62,10 @@ public final class TimeUtil {
             i++;
             if (val != 0) {
                 builder.append(val).append(unitStr);
+                currentLevelOfSpecificity++;
+                if (currentLevelOfSpecificity == maxLevelOfSpecificity) {
+                    break;
+                }
                 if (i != TIME_WEIGHTS.size()) {
                     builder.append(" ");
                 }

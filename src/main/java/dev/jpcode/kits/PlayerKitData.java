@@ -35,14 +35,26 @@ public class PlayerKitData extends PlayerData {
         }
     }
 
-    public boolean isKitOnCooldownAtTime(Map.Entry<String, Kit> kit, long timeMs) {
-        var kitUsedTimeOpt = getKitUsedTime(kit.getKey());
-        var kitCooldownMs = kit.getValue().cooldownMs();
-        return
+    public long getKitCooldownRemainingMs(String kitName, Kit kit, long timeMs) {
+        var kitUsedTimeOpt = getKitUsedTime(kitName);
+        var kitCooldownMs = kit.cooldownMs();
+        if (kitUsedTimeOpt.isEmpty()) {
             // kit never used, can't be on any sort of cd, even if a one-time kit
-            kitUsedTimeOpt.isEmpty()
-                // have a non-negative cd, so not a one-time kit. Do the cd math.
-                || (kitCooldownMs >= 0 && (kitUsedTimeOpt.get() + kitCooldownMs) - timeMs <= 0);
+            return 0;
+        }
+        if (kitCooldownMs == 0) {
+            return 0;
+        }
+        if (kitCooldownMs < 0) {
+            // kit has been used, and there is a negative cooldown, meaning it is a one-time kit
+            return Long.MAX_VALUE;
+        }
+        // have a non-negative cd, so not a one-time kit. Do the cd math.
+        return Math.max(0, (kitUsedTimeOpt.get() + kitCooldownMs) - timeMs);
+    }
+
+    public boolean isKitOnCooldownAtTime(Map.Entry<String, Kit> kit, long timeMs) {
+        return getKitCooldownRemainingMs(kit.getKey(), kit.getValue(), timeMs) <= 0;
     }
 
     @Override
