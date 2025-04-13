@@ -34,8 +34,9 @@ public final class KitCommandsManagerCommand {
             for (int i = 1; i <= commands.size(); i++) {
                 String command = commands.get(i - 1);
                 message.append(Text.literal(String.format("\n#%d: %s", i, command))
-                    .setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                        String.format("/kit commands %s remove %s", kitName, command)))));
+                    .setStyle(Style.EMPTY.withClickEvent(new ClickEvent.SuggestCommand(
+                        String.format("/kit commands %s remove %s", kitName, command)
+                    ))));
             }
         } else {
             message.append("\nDoes not have any commands");
@@ -79,8 +80,9 @@ public final class KitCommandsManagerCommand {
             saveKit(kitName, kit, source.getWorld());
             source.sendFeedback(() ->
                     Text.literal(String.format("Removed command \"%s\" from kit '%s'. (click to re-add)", command, kitName))
-                        .setStyle(Style.EMPTY.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                            String.format("/kit commands %s add %s", kitName, command)))),
+                        .setStyle(Style.EMPTY.withClickEvent(new ClickEvent.SuggestCommand(
+                            String.format("/kit commands %s add %s", kitName, command)
+                        ))),
                 true);
         } catch (IOException e) {
             throw new KitCommandSyntaxException(Text.literal("Failed to save kit."));

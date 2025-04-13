@@ -72,12 +72,16 @@ public class PlayerKitData extends PlayerData {
 
     @Override
     public void fromNbt(NbtCompound nbtCompound) {
-        NbtCompound dataTag = nbtCompound.getCompound("data");
-        NbtCompound kitUsedTimesNbt = dataTag.getCompound("kitUsedTimes");
-        for (String key : kitUsedTimesNbt.getKeys()) {
-            this.kitUsedTimes.put(key, kitUsedTimesNbt.getLong(key));
-        }
-        this.hasReceivedStarterKit = dataTag.getBoolean("hasReceivedStarterKit");
+        // `data` is the pre-1.21.5 root key
+        NbtCompound dataTag = nbtCompound.getCompound("data").orElse(nbtCompound);
+
+        dataTag.getCompound("kitUsedTimes").ifPresent(kitUsedTimesNbt -> {
+            for (String key : kitUsedTimesNbt.getKeys()) {
+                this.kitUsedTimes.put(key, kitUsedTimesNbt.getLong(key).orElseThrow());
+            }
+        });
+
+        this.hasReceivedStarterKit = dataTag.getBoolean("hasReceivedStarterKit").orElse(false);
     }
 
     public boolean hasReceivedStarterKit() {

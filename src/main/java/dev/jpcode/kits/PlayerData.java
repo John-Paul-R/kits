@@ -29,6 +29,14 @@ public abstract class PlayerData extends PersistentState {
 
     public abstract void fromNbt(NbtCompound nbtCompound3);
 
+    public abstract NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapperLookup);
+
+    protected NbtCompound toNbt(RegistryWrapper.WrapperLookup wrapperLookup) {
+        var tag = new NbtCompound();
+        this.writeNbt(tag, wrapperLookup);
+        return tag;
+    }
+
     public void save(RegistryWrapper.WrapperLookup wrapperLookup) {
         NbtCompound data = this.toNbt(wrapperLookup);
 

@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.item.Item;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
@@ -99,7 +98,7 @@ public class Kit {
         if (!kitNbt.contains(StorageKey.SCHEMA_VERSION)) {
             // Upgrade version nil to v1
             // Negative cooldowns replaced with 0, since that was the old behavior
-            var cd = kitNbt.getLong(StorageKey.COOLDOWN);
+            var cd = kitNbt.getLong(StorageKey.COOLDOWN).orElse(0L);
             if (cd < 0) {
                 kitNbt.putLong(StorageKey.COOLDOWN, 0);
             }
@@ -116,14 +115,16 @@ public class Kit {
         assert kitNbt != null;
         handleReadVersion(kitNbt);
 
-        kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY, NbtElement.COMPOUND_TYPE), world);
-        long cooldown = kitNbt.getLong(StorageKey.COOLDOWN);
-        var kitDisplayItem = kitNbt.contains(StorageKey.DISPLAY_ITEM)
-            ? Registries.ITEM.get(Identifier.of(kitNbt.getString(StorageKey.DISPLAY_ITEM)))
-            : null;
-        ArrayList<String> commands = kitNbt.contains(StorageKey.COMMANDS)
-            ? new ArrayList<>(kitNbt.getList(StorageKey.COMMANDS, NbtElement.STRING_TYPE).stream().map(NbtElement::asString).toList())
-            : new ArrayList<>();
+        kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY).orElseThrow(), world);
+        long cooldown = kitNbt.getLong(StorageKey.COOLDOWN).orElseThrow();
+        var kitDisplayItem = kitNbt.getString(StorageKey.DISPLAY_ITEM)
+            .map(Identifier::of)
+            .map(Registries.ITEM::get)
+            .orElse(null);
+
+        ArrayList<String> commands = kitNbt.getList(StorageKey.COMMANDS)
+            .map(l -> new ArrayList<>(kitNbt.getList(StorageKey.COMMANDS).orElseThrow().stream().map(e -> e.asString().orElseThrow()).toList()))
+            .orElseGet(ArrayList::new);
 
         return new Kit(kitInventory, cooldown, kitDisplayItem, commands);
     }

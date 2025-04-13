@@ -1,6 +1,5 @@
 package dev.jpcode.kits;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,7 +95,7 @@ public class KitInventory implements Inventory {
         DefaultedList<ItemStack> defaultedList = null;
 
         DefaultedList<ItemStack> defaultedList2;
-        for (Iterator<DefaultedList<ItemStack>> combinedInventoryIterator = this.combinedInventory.iterator(); combinedInventoryIterator.hasNext(); slot -= defaultedList2.size()) {
+        for (java.util.Iterator<DefaultedList<ItemStack>> combinedInventoryIterator = this.combinedInventory.iterator(); combinedInventoryIterator.hasNext(); slot -= defaultedList2.size()) {
             defaultedList2 = combinedInventoryIterator.next();
             if (slot < defaultedList2.size()) {
                 defaultedList = defaultedList2;
@@ -150,8 +149,8 @@ public class KitInventory implements Inventory {
         this.offHand.clear();
 
         for (int i = 0; i < nbtList.size(); ++i) {
-            NbtCompound nbtCompound = nbtList.getCompound(i);
-            int j = nbtCompound.getByte("Slot") & 255;
+            NbtCompound nbtCompound = nbtList.getCompound(i).orElseThrow();
+            int j = nbtCompound.getByte("Slot").orElseThrow() & 255;
             Optional<ItemStack> optionalItemStack = ItemStack.fromNbt(world.getRegistryManager(), nbtCompound);
             if (optionalItemStack.isPresent()) {
                 ItemStack itemStack = optionalItemStack.get();
@@ -172,7 +171,7 @@ public class KitInventory implements Inventory {
     }
 
     public boolean isEmpty() {
-        Iterator<ItemStack> var1 = this.main.iterator();
+        var var1 = this.main.iterator();
 
         ItemStack itemStack;
         do {
@@ -210,7 +209,7 @@ public class KitInventory implements Inventory {
         List<ItemStack> list = null;
 
         DefaultedList<ItemStack> defaultedList;
-        for (Iterator<DefaultedList<ItemStack>> combinedInventoryIterator = this.combinedInventory.iterator(); combinedInventoryIterator.hasNext(); slot -= defaultedList.size()) {
+        for (java.util.Iterator<DefaultedList<ItemStack>> combinedInventoryIterator = this.combinedInventory.iterator(); combinedInventoryIterator.hasNext(); slot -= defaultedList.size()) {
             defaultedList = combinedInventoryIterator.next();
             if (slot < defaultedList.size()) {
                 list = defaultedList;
@@ -277,7 +276,7 @@ public class KitInventory implements Inventory {
         DefaultedList<ItemStack> defaultedList = null;
 
         DefaultedList<ItemStack> defaultedList2;
-        for (Iterator<DefaultedList<ItemStack>> var3 = this.combinedInventory.iterator(); var3.hasNext(); slot -= defaultedList2.size()) {
+        for (java.util.Iterator<DefaultedList<ItemStack>> var3 = this.combinedInventory.iterator(); var3.hasNext(); slot -= defaultedList2.size()) {
             defaultedList2 = var3.next();
             if (slot < defaultedList2.size()) {
                 defaultedList = defaultedList2;
@@ -298,7 +297,7 @@ public class KitInventory implements Inventory {
         List<ItemStack> list = null;
 
         DefaultedList<ItemStack> defaultedList;
-        for (Iterator<DefaultedList<ItemStack>> var4 = this.combinedInventory.iterator(); var4.hasNext(); slot -= defaultedList.size()) {
+        for (java.util.Iterator<DefaultedList<ItemStack>> var4 = this.combinedInventory.iterator(); var4.hasNext(); slot -= defaultedList.size()) {
             defaultedList = var4.next();
             if (slot < defaultedList.size()) {
                 list = defaultedList;
