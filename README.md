@@ -28,11 +28,16 @@ use them infinitely.
 
 ### Adding Kits
 
-Command: `/kit add <kit_name> <cooldown_milliseconds>`\
+Command: `/kit add <kit_name> <cooldown> [time_unit]`\
 Requires Permission: `kits.manage`
 
 To add a kit, simply place the items you would like to be included in this kit
 anywhere in your inventory and run the command `/kit add`.
+
+> [!NOTE]
+> `[time_unit]` may be one of `d` (day), `h` (hour), `m` (minute), `s` (second),
+> `y` (year). If no time unit is specified, `cooldown` is interpreted as
+> milliseconds.
 
 ### Claiming Kits
 
