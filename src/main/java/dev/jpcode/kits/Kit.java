@@ -116,7 +116,7 @@ public class Kit {
         handleReadVersion(kitNbt);
 
         kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY).orElseThrow(), world);
-        long cooldown = kitNbt.getLong(StorageKey.COOLDOWN).orElseThrow();
+        long cooldown = kitNbt.getLong(StorageKey.COOLDOWN).orElse(0L);
         var kitDisplayItem = kitNbt.getString(StorageKey.DISPLAY_ITEM)
             .map(Identifier::of)
             .map(Registries.ITEM::get)
