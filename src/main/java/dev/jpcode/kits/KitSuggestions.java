@@ -15,11 +15,17 @@ import net.minecraft.util.Util;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
-import static dev.jpcode.kits.KitsMod.KIT_MAP;
-import static dev.jpcode.kits.KitsMod.KIT_RING_MAP;
-
 public final class KitSuggestions {
-    public static Stream<Map.Entry<String, Kit>> getAllKitsForPlayer(ServerPlayerEntity player) {
+
+    private final KitsModStorage storage;
+
+    public KitSuggestions(
+        KitsModStorage storage
+    ) {
+        this.storage = storage;
+    }
+
+    public Stream<Map.Entry<String, Kit>> getAllKitsForPlayer(ServerPlayerEntity player) {
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         return Stream.concat(
             getAllNonRingKitsForPlayer(player),
@@ -34,25 +40,25 @@ public final class KitSuggestions {
         );
     }
 
-    public static Stream<Map.Entry<String, Kit>> getAllNonRingKitsForPlayer(ServerPlayerEntity player) {
+    public Stream<Map.Entry<String, Kit>> getAllNonRingKitsForPlayer(ServerPlayerEntity player) {
         var source = player.getCommandSource();
-        return KIT_MAP.entrySet()
+        return storage.KIT_MAP.entrySet()
             .stream()
             .filter(kitEntry ->
                 KitPerms.checkKit(source, kitEntry.getKey())
             );
     }
 
-    public static Stream<Map.Entry<String, KitRing>> getAllKitRingsForPlayer(ServerPlayerEntity player) {
+    public Stream<Map.Entry<String, KitRing>> getAllKitRingsForPlayer(ServerPlayerEntity player) {
         var source = player.getCommandSource();
-        return KIT_RING_MAP.entrySet()
+        return storage.KIT_RING_MAP.entrySet()
             .stream()
             .filter(ringEntry ->
                 KitPerms.checkKit(source, ringEntry.getKey())
             );
     }
 
-    public static CompletableFuture<Suggestions> kitRingsSuggestionProvider(
+    public CompletableFuture<Suggestions> kitRingsSuggestionProvider(
         CommandContext<ServerCommandSource> context,
         SuggestionsBuilder builder
     ) {
@@ -64,7 +70,7 @@ public final class KitSuggestions {
         );
     }
 
-    public static CompletableFuture<Suggestions> kitRingKitsSuggestionProvider(
+    public CompletableFuture<Suggestions> kitRingKitsSuggestionProvider(
         CommandContext<ServerCommandSource> context,
         SuggestionsBuilder builder
     ) {
@@ -78,7 +84,7 @@ public final class KitSuggestions {
         );
     }
 
-    public static CompletableFuture<Suggestions> kitsNotInRingSuggestionProvider(
+    public CompletableFuture<Suggestions> kitsNotInRingSuggestionProvider(
         CommandContext<ServerCommandSource> context,
         SuggestionsBuilder builder
     ) {
@@ -90,7 +96,7 @@ public final class KitSuggestions {
         );
     }
 
-    public static Stream<Map.Entry<String, Kit>> getClaimableKitsForPlayer(ServerPlayerEntity player) {
+    public Stream<Map.Entry<String, Kit>> getClaimableKitsForPlayer(ServerPlayerEntity player) {
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         long currentTime = Util.getEpochTimeMs();
 
@@ -105,7 +111,7 @@ public final class KitSuggestions {
      * @param builder suggestions builder
      * @return suggestions for existing kits that the user has permissions for.
      */
-    public static CompletableFuture<Suggestions> suggestionProvider(
+    public CompletableFuture<Suggestions> suggestionProvider(
         CommandContext<ServerCommandSource> context,
         SuggestionsBuilder builder
     ) {

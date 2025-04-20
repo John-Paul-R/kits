@@ -13,28 +13,31 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 
-import dev.jpcode.kits.Kit;
-import dev.jpcode.kits.KitPerms;
-import dev.jpcode.kits.PlayerKitData;
-import dev.jpcode.kits.TimeUtil;
+import dev.jpcode.kits.*;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
 import static dev.jpcode.kits.InventoryUtil.offerAllCopies;
 import static dev.jpcode.kits.KitUtil.runCommands;
-import static dev.jpcode.kits.KitsMod.KIT_MAP;
 
 public class KitClaimCommand implements Command<ServerCommandSource> {
+
+    private final KitsModStorage storage;
+
+    public KitClaimCommand(KitsModStorage storage) {
+        this.storage = storage;
+    }
+
     @Override
     public int run(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         String kitName = StringArgumentType.getString(context, "kit_name");
         return exec(context.getSource().getPlayerOrThrow(), kitName);
     }
 
-    public static int exec(ServerPlayerEntity player, String kitName) {
+    public int exec(ServerPlayerEntity player, String kitName) {
         PlayerKitData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         var commandSource = player.getCommandSource();
 
-        Kit kit = KIT_MAP.get(kitName);
+        Kit kit = storage.KIT_MAP.get(kitName);
         long currentTime = Util.getEpochTimeMs();
         Optional<Long> lastUsed = playerData.getKitUsedTime(kitName);
         long cooldown = kit.cooldownMs();

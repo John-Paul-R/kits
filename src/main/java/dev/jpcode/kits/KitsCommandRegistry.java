@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import me.lucko.fabric.api.permissions.v0.Permissions;
+import org.apache.logging.log4j.Logger;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.LongArgumentType;
@@ -28,28 +29,39 @@ import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.command.KitClaimCommand;
 import dev.jpcode.kits.command.KitCommandsManagerCommand;
 import dev.jpcode.kits.command.KitsCommand;
+import dev.jpcode.kits.config.KitsConfig;
 
-import static dev.jpcode.kits.KitsMod.KIT_MAP;
-import static dev.jpcode.kits.KitsMod.KIT_RING_MAP;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public final class KitsCommandRegistry {
+    private final Logger logger;
+    private final KitsConfig config;
+    private final KitsModStorage storage;
+    private final KitSuggestions kitSuggestions;
 
-    private KitsCommandRegistry() {
+    public KitsCommandRegistry(
+        Logger logger,
+        KitsConfig config,
+        KitsModStorage storage
+    ) {
+        this.logger = logger;
+        this.config = config;
+        this.storage = storage;
+        this.kitSuggestions = new KitSuggestions(storage);
     }
 
     /**
      * @param cooldownMs if negative, creates a one-time use kit
      */
-    static int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, long cooldownMs) {
+    int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, long cooldownMs) {
         var kitInventory = new KitInventory();
         kitInventory.copyFrom(sourceInventory);
         return addKit(context, kitName, new Kit(kitInventory, cooldownMs));
     }
 
-    static int addKit(CommandContext<ServerCommandSource> context, String kitName, Kit kit) {
-        KIT_MAP.put(kitName, kit);
+    int addKit(CommandContext<ServerCommandSource> context, String kitName, Kit kit) {
+        storage.KIT_MAP.put(kitName, kit);
 
         try {
             saveKit(kitName, kit, context.getSource().getWorld());
@@ -72,8 +84,8 @@ public final class KitsCommandRegistry {
         );
     }
 
-    static int addKitRing(CommandContext<ServerCommandSource> context, String ringName, KitRing ring) {
-        KIT_RING_MAP.put(ringName, ring);
+    int addKitRing(CommandContext<ServerCommandSource> context, String ringName, KitRing ring) {
+        storage.KIT_RING_MAP.put(ringName, ring);
 
         try {
             saveKitRing(ringName, ring, context.getSource().getWorld());
@@ -87,17 +99,17 @@ public final class KitsCommandRegistry {
         return 1;
     }
 
-    static int addKitToRing(CommandContext<ServerCommandSource> context, String ringName, String kitName)
+    int addKitToRing(CommandContext<ServerCommandSource> context, String ringName, String kitName)
         throws KitCommandSyntaxException
     {
-        var ring = KIT_RING_MAP.get(ringName);
+        var ring = storage.KIT_RING_MAP.get(ringName);
         if (ring == null) {
             throw new KitCommandSyntaxException(Text.literal(
                 "Kit ring '%s' not found".formatted(ringName)
             ));
         }
 
-        var kit = KIT_MAP.remove(kitName);
+        var kit = storage.KIT_MAP.remove(kitName);
         if (kit == null) {
             throw new KitCommandSyntaxException(Text.literal(
                 "Kit '%s' not found".formatted(kitName)
@@ -108,7 +120,7 @@ public final class KitsCommandRegistry {
 
         try {
             saveKitRing(ringName, ring, context.getSource().getWorld());
-            KIT_MAP.remove(kitName);
+            storage.KIT_MAP.remove(kitName);
             Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
             context.getSource().sendFeedback(() ->
                     Text.of(String.format("Kit '%s' added to Ring '%s' created.", kitName, ringName)),
@@ -120,10 +132,10 @@ public final class KitsCommandRegistry {
         return 1;
     }
 
-    static int removeKitFromRing(CommandContext<ServerCommandSource> context, String ringName, String kitName)
+    int removeKitFromRing(CommandContext<ServerCommandSource> context, String ringName, String kitName)
         throws KitCommandSyntaxException
     {
-        var ring = KIT_RING_MAP.get(ringName);
+        var ring = storage.KIT_RING_MAP.get(ringName);
         if (ring == null) {
             throw new KitCommandSyntaxException(Text.literal(
                 "Kit Ring '%s' not found".formatted(ringName)
@@ -150,7 +162,7 @@ public final class KitsCommandRegistry {
         return 1;
     }
 
-    public static void saveKitRing(String kitName, KitRing ring, World world) throws IOException {
+    public void saveKitRing(String kitName, KitRing ring, World world) throws IOException {
         NbtCompound root = new NbtCompound();
         ring.writeNbt(root, world);
 
@@ -160,7 +172,7 @@ public final class KitsCommandRegistry {
         );
     }
 
-    public static void register(
+    public void register(
         CommandDispatcher<ServerCommandSource> dispatcher,
         CommandRegistryAccess commandRegistryAccess,
         CommandManager.RegistrationEnvironment registrationEnvironment
@@ -193,13 +205,13 @@ public final class KitsCommandRegistry {
         kitNode.addChild(literal("setDisplayItem")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("kit_name", StringArgumentType.word())
-                .suggests(KitSuggestions::suggestionProvider)
+                .suggests(kitSuggestions::suggestionProvider)
                 .then(argument("item", ItemStackArgumentType.itemStack(commandRegistryAccess))
                     .executes(context -> {
                         var kitName = StringArgumentType.getString(context, "kit_name");
                         var item = ItemStackArgumentType.getItemStackArgument(context, "item");
 
-                        var existingKit = KIT_MAP.get(kitName);
+                        var existingKit = storage.KIT_MAP.get(kitName);
                         existingKit.setDisplayItem(item.getItem());
                         try {
                             saveKit(kitName, existingKit, context.getSource().getWorld());
@@ -214,18 +226,18 @@ public final class KitsCommandRegistry {
 
         kitNode.addChild(literal("claim")
             .then(argument("kit_name", StringArgumentType.word())
-                .suggests(KitSuggestions::suggestionProvider)
-                .executes(new KitClaimCommand())
+                .suggests(kitSuggestions::suggestionProvider)
+                .executes(new KitClaimCommand(storage))
             ).build()
         );
 
         kitNode.addChild(literal("remove")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("kit_name", StringArgumentType.word())
-                .suggests(KitSuggestions::suggestionProvider)
+                .suggests(kitSuggestions::suggestionProvider)
                 .executes(context -> {
                     String kitName = StringArgumentType.getString(context, "kit_name");
-                    KIT_MAP.remove(kitName);
+                    storage.KIT_MAP.remove(kitName);
 
                     try {
                         Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
@@ -244,7 +256,7 @@ public final class KitsCommandRegistry {
         kitNode.addChild(literal("reload")
             .requires(Permissions.require("kits.manage", 4))
             .executes(context -> {
-                KitsMod.reloadKits(context.getSource().getServer());
+                KitsMod.reload(context.getSource().getServer());
                 return 1;
             }).build()
         );
@@ -253,7 +265,7 @@ public final class KitsCommandRegistry {
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("players", EntityArgumentType.players())
                 .then(argument("kit_name", StringArgumentType.word())
-                    .suggests(KitSuggestions::suggestionProvider)
+                    .suggests(kitSuggestions::suggestionProvider)
                     .executes(context -> {
                         var kitName = StringArgumentType.getString(context, "kit_name");
                         var targetPlayers = EntityArgumentType.getPlayers(context, "players");
@@ -289,27 +301,31 @@ public final class KitsCommandRegistry {
             ).build()
         );
 
+        var commandsCommand = new KitCommandsManagerCommand(
+            storage,
+            this
+        );
         kitNode.addChild(literal("commands")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("kit_name", StringArgumentType.word())
-                .suggests(KitSuggestions::suggestionProvider)
+                .suggests(kitSuggestions::suggestionProvider)
                 .then(literal("list")
-                    .executes(KitCommandsManagerCommand::listCommandsForKit)
+                    .executes(commandsCommand::listCommandsForKit)
                 )
                 .then(literal("add")
                     .then(argument("command", StringArgumentType.greedyString())
-                        .executes(KitCommandsManagerCommand::addCommandToKit)
+                        .executes(commandsCommand::addCommandToKit)
                     )
                 )
                 .then(literal("remove")
                     .then(argument("command", StringArgumentType.greedyString())
                         .suggests((CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) -> {
                             String kitName = StringArgumentType.getString(context, "kit_name");
-                            return ListSuggestion.getSuggestionsBuilder(builder, KIT_MAP.containsKey(kitName)
-                                ? KIT_MAP.get(kitName).commands()
+                            return ListSuggestion.getSuggestionsBuilder(builder, storage.KIT_MAP.containsKey(kitName)
+                                ? storage.KIT_MAP.get(kitName).commands()
                                 : new ArrayList<>());
                         })
-                        .executes(KitCommandsManagerCommand::removeCommandFromKit)
+                        .executes(commandsCommand::removeCommandFromKit)
                     )
                 )
             )
@@ -319,11 +335,11 @@ public final class KitsCommandRegistry {
         registerKitRing(dispatcher, commandRegistryAccess, registrationEnvironment, kitNode);
 
         var kitsSguiBuilder = literal("kits")
-            .executes(new KitsCommand());
+            .executes(new KitsCommand(storage, kitSuggestions));
         dispatcher.register(kitsSguiBuilder);
     }
 
-    public static void registerKitRing(
+    public void registerKitRing(
         CommandDispatcher<ServerCommandSource> dispatcher,
         CommandRegistryAccess commandRegistryAccess,
         CommandManager.RegistrationEnvironment registrationEnvironment,
@@ -374,13 +390,13 @@ public final class KitsCommandRegistry {
         ring.then(literal("setDisplayItem")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::kitRingsSuggestionProvider)
+                .suggests(kitSuggestions::kitRingsSuggestionProvider)
                 .then(argument("item", ItemStackArgumentType.itemStack(commandRegistryAccess))
                     .executes(context -> {
                         var ringName = StringArgumentType.getString(context, "ring_name");
                         var item = ItemStackArgumentType.getItemStackArgument(context, "item");
 
-                        var existingRing = KIT_RING_MAP.get(ringName);
+                        var existingRing = storage.KIT_RING_MAP.get(ringName);
                         existingRing.setDisplayItem(item.getItem());
                         try {
                             saveKitRing(ringName, existingRing, context.getSource().getWorld());
@@ -396,10 +412,10 @@ public final class KitsCommandRegistry {
         ring.then(literal("removeRingAndContainedKits")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::kitRingsSuggestionProvider)
+                .suggests(kitSuggestions::kitRingsSuggestionProvider)
                 .executes(context -> {
                     String ringName = StringArgumentType.getString(context, "ring_name");
-                    KIT_RING_MAP.remove(ringName);
+                    storage.KIT_RING_MAP.remove(ringName);
 
                     try {
                         Files.delete(KitsMod.getKitsDir().toPath().resolve(ringName + ".ring.nbt"));
@@ -418,10 +434,10 @@ public final class KitsCommandRegistry {
         ring.then(literal("removeRing")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::kitRingsSuggestionProvider)
+                .suggests(kitSuggestions::kitRingsSuggestionProvider)
                 .executes(context -> {
                     String ringName = StringArgumentType.getString(context, "ring_name");
-                    KIT_MAP.remove(ringName);
+                    storage.KIT_MAP.remove(ringName);
 
                     try {
                         Files.delete(KitsMod.getKitsDir().toPath().resolve(ringName + ".nbt"));
@@ -441,7 +457,7 @@ public final class KitsCommandRegistry {
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("players", EntityArgumentType.players())
                 .then(argument("ring_name", StringArgumentType.word())
-                    .suggests(KitSuggestions::kitRingsSuggestionProvider)
+                    .suggests(kitSuggestions::kitRingsSuggestionProvider)
                     .executes(context -> {
                         var ringName = StringArgumentType.getString(context, "ring_name");
                         var targetPlayers = EntityArgumentType.getPlayers(context, "players");
@@ -459,27 +475,31 @@ public final class KitsCommandRegistry {
                 )).build()
         );
 
+        var commandsCommand = new KitCommandsManagerCommand(
+            storage,
+            this
+        );
         ring.then(literal("commands")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::kitRingsSuggestionProvider)
+                .suggests(kitSuggestions::kitRingsSuggestionProvider)
                 .then(literal("list")
-                    .executes(KitCommandsManagerCommand::listCommandsForKit)
+                    .executes(commandsCommand::listCommandsForKit)
                 )
                 .then(literal("add")
                     .then(argument("command", StringArgumentType.greedyString())
-                        .executes(KitCommandsManagerCommand::addCommandToKit)
+                        .executes(commandsCommand::addCommandToKit)
                     )
                 )
                 .then(literal("remove")
                     .then(argument("command", StringArgumentType.greedyString())
                         .suggests((CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) -> {
                             String ringName = StringArgumentType.getString(context, "ring_name");
-                            return ListSuggestion.getSuggestionsBuilder(builder, KIT_RING_MAP.containsKey(ringName)
-                                ? KIT_RING_MAP.get(ringName).commands()
+                            return ListSuggestion.getSuggestionsBuilder(builder, storage.KIT_RING_MAP.containsKey(ringName)
+                                ? storage.KIT_RING_MAP.get(ringName).commands()
                                 : new ArrayList<>());
                         })
-                        .executes(KitCommandsManagerCommand::removeCommandFromKit)
+                        .executes(commandsCommand::removeCommandFromKit)
                     )
                 )
             )
@@ -489,9 +509,9 @@ public final class KitsCommandRegistry {
         ring.then(literal("addKit")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::kitRingsSuggestionProvider)
+                .suggests(kitSuggestions::kitRingsSuggestionProvider)
                 .then(argument("kit_name", StringArgumentType.word())
-                    .suggests(KitSuggestions::kitsNotInRingSuggestionProvider)
+                    .suggests(kitSuggestions::kitsNotInRingSuggestionProvider)
                     .executes(context -> {
                         var ringName = StringArgumentType.getString(context, "ring_name");
                         var kitName = StringArgumentType.getString(context, "kit_name");
@@ -508,9 +528,9 @@ public final class KitsCommandRegistry {
         ring.then(literal("removeKit")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::kitRingsSuggestionProvider)
+                .suggests(kitSuggestions::kitRingsSuggestionProvider)
                 .then(argument("kit_name", StringArgumentType.word())
-                    .suggests(KitSuggestions::kitRingKitsSuggestionProvider)
+                    .suggests(kitSuggestions::kitRingKitsSuggestionProvider)
                     .executes(context -> {
                         var ringName = StringArgumentType.getString(context, "ring_name");
                         var kitName = StringArgumentType.getString(context, "kit_name");

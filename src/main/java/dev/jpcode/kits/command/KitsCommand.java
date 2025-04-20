@@ -18,20 +18,26 @@ import net.minecraft.text.Text;
 import net.minecraft.text.Texts;
 import net.minecraft.util.Util;
 
-import dev.jpcode.kits.Kit;
-import dev.jpcode.kits.KitSuggestions;
-import dev.jpcode.kits.PlayerKitData;
-import dev.jpcode.kits.TimeUtil;
+import dev.jpcode.kits.*;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
 import static dev.jpcode.kits.KitsMod.CONFIG;
 
 public class KitsCommand implements Command<ServerCommandSource> {
+
+    private final KitSuggestions kitSuggestions;
+    private final KitClaimCommand kitClaimCommand;
+
+    public KitsCommand(KitsModStorage storage, KitSuggestions suggestions) {
+        this.kitSuggestions = suggestions;
+        this.kitClaimCommand = new KitClaimCommand(storage);
+    }
+
     @Override
     public int run(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
         var player = ctx.getSource().getPlayerOrThrow();
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        var allPlayerKits = KitSuggestions.getAllKitsForPlayer(player);
+        var allPlayerKits = kitSuggestions.getAllKitsForPlayer(player);
 
         long currentTime = Util.getEpochTimeMs();
 
@@ -46,7 +52,7 @@ public class KitsCommand implements Command<ServerCommandSource> {
                 createKitItemStack(playerData, kitEntry.getKey(), kitEntry.getValue(), currentTime),
                 (index, type, action, gui) -> {
                     if (type.isLeft) {
-                        KitClaimCommand.exec(player, kitEntry.getKey());
+                        kitClaimCommand.exec(player, kitEntry.getKey());
                         gui.close();
                     }
                 });
