@@ -19,19 +19,19 @@ import net.minecraft.text.Texts;
 import net.minecraft.util.Util;
 
 import dev.jpcode.kits.Kit;
+import dev.jpcode.kits.KitSuggestions;
 import dev.jpcode.kits.PlayerKitData;
 import dev.jpcode.kits.TimeUtil;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
 import static dev.jpcode.kits.KitsMod.CONFIG;
-import static dev.jpcode.kits.KitsMod.getAllKitsForPlayer;
 
 public class KitsCommand implements Command<ServerCommandSource> {
     @Override
     public int run(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
         var player = ctx.getSource().getPlayerOrThrow();
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        var allPlayerKits = getAllKitsForPlayer(player);
+        var allPlayerKits = KitSuggestions.getAllKitsForPlayer(player);
 
         long currentTime = Util.getEpochTimeMs();
 

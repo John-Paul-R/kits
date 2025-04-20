@@ -7,31 +7,22 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.mojang.brigadier.LiteralMessage;
-import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Util;
 import net.minecraft.util.WorldSavePath;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
-import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.config.KitsConfig;
 
 public class KitsMod implements ModInitializer {
@@ -42,6 +33,7 @@ public class KitsMod implements ModInitializer {
         "https://github.com/John-Paul-R/kits/wiki/Basic-Usage"
     );
     public static final Map<String, Kit> KIT_MAP = new HashMap<>();
+    public static final Map<String, KitRing> KIT_RING_MAP = new HashMap<>();
     public static final SimpleCommandExceptionType COMMAND_EXCEPTION_TYPE = new SimpleCommandExceptionType(new LiteralMessage("Kits exception"));
     private static File kitsDir;
     private static Path userDataDir;
@@ -94,7 +86,7 @@ public class KitsMod implements ModInitializer {
                     NbtCompound kitNbt = NbtIo.read(kitFile.toPath());
                     String fileName = kitFile.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
-                    KIT_MAP.put(kitName, Kit.fromNbt(kitNbt, server.getOverworld()));
+                    KIT_MAP.put(kitName, Kit.fromNbt(kitNbt));
                 } catch (IOException | NullPointerException e) {
                     e.printStackTrace();
                 }

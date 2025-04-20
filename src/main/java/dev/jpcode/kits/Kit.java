@@ -123,7 +123,7 @@ public class Kit {
         // other version handling...
     }
 
-    public static Kit fromNbt(NbtCompound kitNbt, World world) {
+    public static Kit fromNbt(NbtCompound kitNbt) {
         var kitInventory = new KitInventory();
 
         assert kitNbt != null;

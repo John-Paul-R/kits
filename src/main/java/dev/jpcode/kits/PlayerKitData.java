@@ -14,11 +14,13 @@ import net.minecraft.util.Util;
 public class PlayerKitData extends PlayerData {
 
     private Map<String, Long> kitUsedTimes;
+    private Map<String, String> ringSelections;
     private boolean hasReceivedStarterKit;
 
     public PlayerKitData(ServerPlayerEntity player, File saveFile) {
         super(player, saveFile);
         kitUsedTimes = new HashMap<>();
+        ringSelections = new HashMap<>();
     }
 
     public void useKit(String kitName) {
@@ -98,6 +100,17 @@ public class PlayerKitData extends PlayerData {
         this.kitUsedTimes.remove(kitName);
         this.markDirty();
     }
+
+    public void resetRingSelection(String ringName) {
+        this.ringSelections.remove(ringName);
+        this.markDirty();
+    }
+
+    public boolean mayClaimFromRing(String ringName, String kitName) {
+        var ringChoice = this.ringSelections.get(ringName);
+        return ringChoice != null && ringChoice.equals(kitName);
+    }
+
 
     public void resetAllKits() {
         this.kitUsedTimes.clear();
