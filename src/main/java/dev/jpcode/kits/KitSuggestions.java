@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
@@ -59,6 +60,20 @@ public final class KitSuggestions {
             builder,
             getAllKitRingsForPlayer(context.getSource().getPlayer())
                 .map(Map.Entry::getKey)
+                .toList()
+        );
+    }
+
+    public static CompletableFuture<Suggestions> kitRingKitsSuggestionProvider(
+        CommandContext<ServerCommandSource> context,
+        SuggestionsBuilder builder
+    ) {
+        var ringName = StringArgumentType.getString(context, "ring_name");
+        return ListSuggestion.getSuggestionsBuilder(
+            builder,
+            getAllKitRingsForPlayer(context.getSource().getPlayer())
+                .filter(kitRingEntry -> kitRingEntry.getKey().equals(ringName))
+                .flatMap(kitRingEntry -> kitRingEntry.getValue().kits().keySet().stream())
                 .toList()
         );
     }

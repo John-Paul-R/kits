@@ -97,7 +97,7 @@ public final class KitsCommandRegistry {
             ));
         }
 
-        var kit = KIT_MAP.get(kitName);
+        var kit = KIT_MAP.remove(kitName);
         if (kit == null) {
             throw new KitCommandSyntaxException(Text.literal(
                 "Kit '%s' not found".formatted(kitName)
@@ -108,6 +108,8 @@ public final class KitsCommandRegistry {
 
         try {
             saveKitRing(ringName, ring, context.getSource().getWorld());
+            KIT_MAP.remove(kitName);
+            Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
             context.getSource().sendFeedback(() ->
                     Text.of(String.format("Kit '%s' added to Ring '%s' created.", kitName, ringName)),
                 true
@@ -372,7 +374,7 @@ public final class KitsCommandRegistry {
         ring.then(literal("setDisplayItem")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::suggestionProvider)
+                .suggests(KitSuggestions::kitRingsSuggestionProvider)
                 .then(argument("item", ItemStackArgumentType.itemStack(commandRegistryAccess))
                     .executes(context -> {
                         var ringName = StringArgumentType.getString(context, "ring_name");
@@ -394,7 +396,7 @@ public final class KitsCommandRegistry {
         ring.then(literal("removeRingAndContainedKits")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-//                .suggests(KitSuggestions::suggestionProvider)
+                .suggests(KitSuggestions::kitRingsSuggestionProvider)
                 .executes(context -> {
                     String ringName = StringArgumentType.getString(context, "ring_name");
                     KIT_RING_MAP.remove(ringName);
@@ -416,7 +418,7 @@ public final class KitsCommandRegistry {
         ring.then(literal("removeRing")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::suggestionProvider)
+                .suggests(KitSuggestions::kitRingsSuggestionProvider)
                 .executes(context -> {
                     String ringName = StringArgumentType.getString(context, "ring_name");
                     KIT_MAP.remove(ringName);
@@ -439,7 +441,7 @@ public final class KitsCommandRegistry {
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("players", EntityArgumentType.players())
                 .then(argument("ring_name", StringArgumentType.word())
-                    .suggests(KitSuggestions::suggestionProvider)
+                    .suggests(KitSuggestions::kitRingsSuggestionProvider)
                     .executes(context -> {
                         var ringName = StringArgumentType.getString(context, "ring_name");
                         var targetPlayers = EntityArgumentType.getPlayers(context, "players");
@@ -460,7 +462,7 @@ public final class KitsCommandRegistry {
         ring.then(literal("commands")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
-                .suggests(KitSuggestions::suggestionProvider)
+                .suggests(KitSuggestions::kitRingsSuggestionProvider)
                 .then(literal("list")
                     .executes(KitCommandsManagerCommand::listCommandsForKit)
                 )
@@ -487,7 +489,9 @@ public final class KitsCommandRegistry {
         ring.then(literal("addKit")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
+                .suggests(KitSuggestions::kitRingsSuggestionProvider)
                 .then(argument("kit_name", StringArgumentType.word())
+                    .suggests(KitSuggestions::kitsNotInRingSuggestionProvider)
                     .executes(context -> {
                         var ringName = StringArgumentType.getString(context, "ring_name");
                         var kitName = StringArgumentType.getString(context, "kit_name");
@@ -504,7 +508,9 @@ public final class KitsCommandRegistry {
         ring.then(literal("removeKit")
             .requires(Permissions.require("kits.manage", 4))
             .then(argument("ring_name", StringArgumentType.word())
+                .suggests(KitSuggestions::kitRingsSuggestionProvider)
                 .then(argument("kit_name", StringArgumentType.word())
+                    .suggests(KitSuggestions::kitRingKitsSuggestionProvider)
                     .executes(context -> {
                         var ringName = StringArgumentType.getString(context, "ring_name");
                         var kitName = StringArgumentType.getString(context, "kit_name");

@@ -15,6 +15,7 @@ import com.mojang.brigadier.LiteralMessage;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtCrashException;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.WorldSavePath;
@@ -81,13 +82,27 @@ public class KitsMod implements ModInitializer {
                     String.format("Failed to list files in the kits directory ('%s')", kitsDir.getPath()));
             }
             for (File kitFile : kitFiles) {
+                if (kitFile.getPath().endsWith(".ring.nbt")) {
+                    try {
+                        LOGGER.info("Loading kit ring '{}'", kitFile.getName());
+                        NbtCompound kitRingNbt = NbtIo.read(kitFile.toPath());
+                        String fileName = kitFile.getName();
+                        String kitName = fileName.substring(0, fileName.length() - ".ring.nbt".length());
+                        KIT_RING_MAP.put(kitName, KitRing.fromNbt(kitRingNbt, server.getOverworld()));
+                    } catch (IOException | NullPointerException | NbtCrashException e) {
+                        LOGGER.error("Error while loading kit ring '{}'", kitFile.getPath());
+                        e.printStackTrace();
+                    }
+                    continue;
+                }
                 try {
                     LOGGER.info("Loading kit '{}'", kitFile.getName());
                     NbtCompound kitNbt = NbtIo.read(kitFile.toPath());
                     String fileName = kitFile.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
                     KIT_MAP.put(kitName, Kit.fromNbt(kitNbt));
-                } catch (IOException | NullPointerException e) {
+                } catch (IOException | NullPointerException | NbtCrashException e) {
+                    LOGGER.error("Error while loading kit '{}'", kitFile.getPath());
                     e.printStackTrace();
                 }
             }

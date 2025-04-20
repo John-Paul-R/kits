@@ -132,7 +132,7 @@ public class KitRing {
                 kitEntry.getValue().writeNbt(kitNbt, world);
                 kitsNbt.put(kitEntry.getKey(), kitNbt);
             }
-            root.put(KitRing.StorageKey.COMMANDS, kitsNbt);
+            root.put(KitRing.StorageKey.KITS, kitsNbt);
         }
     }
 
