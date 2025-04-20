@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import me.lucko.fabric.api.permissions.v0.Permissions;
+
+import net.minecraft.world.World;
+
 import org.apache.logging.log4j.Logger;
 
 import com.mojang.brigadier.CommandDispatcher;
@@ -23,7 +26,6 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
-import net.minecraft.world.World;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.command.KitClaimCommand;
@@ -60,11 +62,10 @@ public final class KitsCommandRegistry {
         return addKit(context, kitName, new Kit(kitInventory, cooldownMs));
     }
 
-    int addKit(CommandContext<ServerCommandSource> context, String kitName, Kit kit) {
-        storage.KIT_MAP.put(kitName, kit);
-
+    int addKit(CommandContext<ServerCommandSource> context, String kitName, Kit kit)
+    {
         try {
-            saveKit(kitName, kit, context.getSource().getWorld());
+            storage.putKit(kitName, kit);
             context.getSource().sendFeedback(() ->
                 Text.of(String.format("Kit '%s' created from current inventory.", kitName)),
                 true
@@ -75,20 +76,9 @@ public final class KitsCommandRegistry {
         return 1;
     }
 
-    public static void saveKit(String kitName, Kit kit, World world) throws IOException {
-        var nbt = kit.toNbt(world);
-
-        NbtIo.write(
-            nbt,
-            KitsMod.getKitsDir().toPath().resolve(String.format("%s.nbt", kitName)).toFile().toPath()
-        );
-    }
-
     int addKitRing(CommandContext<ServerCommandSource> context, String ringName, KitRing ring) {
-        storage.KIT_RING_MAP.put(ringName, ring);
-
         try {
-            saveKitRing(ringName, ring, context.getSource().getWorld());
+            storage.putKitRing(ringName, ring);
             context.getSource().sendFeedback(() ->
                     Text.of(String.format("Kit Ring '%s' created.", ringName)),
                 true
@@ -102,26 +92,8 @@ public final class KitsCommandRegistry {
     int addKitToRing(CommandContext<ServerCommandSource> context, String ringName, String kitName)
         throws KitCommandSyntaxException
     {
-        var ring = storage.KIT_RING_MAP.get(ringName);
-        if (ring == null) {
-            throw new KitCommandSyntaxException(Text.literal(
-                "Kit ring '%s' not found".formatted(ringName)
-            ));
-        }
-
-        var kit = storage.KIT_MAP.remove(kitName);
-        if (kit == null) {
-            throw new KitCommandSyntaxException(Text.literal(
-                "Kit '%s' not found".formatted(kitName)
-            ));
-        }
-
-        ring.addKit(kitName, kit);
-
         try {
-            saveKitRing(ringName, ring, context.getSource().getWorld());
-            storage.KIT_MAP.remove(kitName);
-            Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
+            storage.putKitInRing(ringName, kitName);
             context.getSource().sendFeedback(() ->
                     Text.of(String.format("Kit '%s' added to Ring '%s' created.", kitName, ringName)),
                 true
@@ -129,29 +101,15 @@ public final class KitsCommandRegistry {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return 1;
     }
 
     int removeKitFromRing(CommandContext<ServerCommandSource> context, String ringName, String kitName)
         throws KitCommandSyntaxException
     {
-        var ring = storage.KIT_RING_MAP.get(ringName);
-        if (ring == null) {
-            throw new KitCommandSyntaxException(Text.literal(
-                "Kit Ring '%s' not found".formatted(ringName)
-            ));
-        }
-
-        var removed = ring.removeKit(kitName);
-
-        if (removed == null) {
-            throw new KitCommandSyntaxException(Text.literal(
-                "Kit '%s' not found in Ring '%s'".formatted(kitName, ringName)
-            ));
-        }
-
         try {
-            saveKitRing(ringName, ring, context.getSource().getWorld());
+            storage.removeKitFromRing(ringName, kitName);
             context.getSource().sendFeedback(() ->
                     Text.of(String.format("Kit '%s' removed from Ring '%s'.", kitName, ringName)),
                 true
@@ -160,16 +118,6 @@ public final class KitsCommandRegistry {
             e.printStackTrace();
         }
         return 1;
-    }
-
-    public void saveKitRing(String kitName, KitRing ring, World world) throws IOException {
-        NbtCompound root = new NbtCompound();
-        ring.writeNbt(root, world);
-
-        NbtIo.write(
-            root,
-            KitsMod.getKitsDir().toPath().resolve(String.format("%s.ring.nbt", kitName)).toFile().toPath()
-        );
     }
 
     public void register(
@@ -214,7 +162,7 @@ public final class KitsCommandRegistry {
                         var existingKit = storage.KIT_MAP.get(kitName);
                         existingKit.setDisplayItem(item.getItem());
                         try {
-                            saveKit(kitName, existingKit, context.getSource().getWorld());
+                            storage.saveKit(kitName, existingKit);
                         } catch (IOException e) {
                             throw new KitCommandSyntaxException(Text.literal("Failed to save kit."));
                         }
@@ -302,8 +250,7 @@ public final class KitsCommandRegistry {
         );
 
         var commandsCommand = new KitCommandsManagerCommand(
-            storage,
-            this
+            storage
         );
         kitNode.addChild(literal("commands")
             .requires(Permissions.require("kits.manage", 4))
@@ -399,7 +346,7 @@ public final class KitsCommandRegistry {
                         var existingRing = storage.KIT_RING_MAP.get(ringName);
                         existingRing.setDisplayItem(item.getItem());
                         try {
-                            saveKitRing(ringName, existingRing, context.getSource().getWorld());
+                            storage.saveKitRing(ringName, existingRing);
                         } catch (IOException e) {
                             throw new KitCommandSyntaxException(Text.literal("Failed to save kit ring."));
                         }
@@ -476,8 +423,7 @@ public final class KitsCommandRegistry {
         );
 
         var commandsCommand = new KitCommandsManagerCommand(
-            storage,
-            this
+            storage
         );
         ring.then(literal("commands")
             .requires(Permissions.require("kits.manage", 4))

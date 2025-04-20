@@ -15,15 +15,12 @@ import net.minecraft.text.Text;
 
 import dev.jpcode.kits.Kit;
 import dev.jpcode.kits.KitCommandSyntaxException;
-import dev.jpcode.kits.KitsCommandRegistry;
 import dev.jpcode.kits.KitsModStorage;
 
 public final class KitCommandsManagerCommand {
     private KitsModStorage storage;
-    private KitsCommandRegistry kitsCommandRegistry;
-    public KitCommandsManagerCommand(KitsModStorage storage, KitsCommandRegistry kitsCommandRegistry) {
+    public KitCommandsManagerCommand(KitsModStorage storage) {
         this.storage = storage;
-        this.kitsCommandRegistry = kitsCommandRegistry;
     }
 
     public int listCommandsForKit(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -61,7 +58,7 @@ public final class KitCommandsManagerCommand {
         try {
             boolean added = kit.addCommand(command);
             if (!added) throw new KitCommandSyntaxException(Text.literal("Command already exists in this kit."));
-            kitsCommandRegistry.saveKit(kitName, kit, source.getWorld());
+            storage.saveKit(kitName, kit);
             source.sendFeedback(() ->
                     Text.literal(String.format("Added command \"%s\" to kit '%s'", command, kitName)),
                 true);
@@ -81,7 +78,7 @@ public final class KitCommandsManagerCommand {
         try {
             boolean existed = kit.removeCommand(command);
             if (!existed) throw new KitCommandSyntaxException(Text.literal("That command is not in this kit."));
-            kitsCommandRegistry.saveKit(kitName, kit, source.getWorld());
+            storage.saveKit(kitName, kit);
             source.sendFeedback(() ->
                     Text.literal(String.format("Removed command \"%s\" from kit '%s'. (click to re-add)", command, kitName))
                         .setStyle(Style.EMPTY.withClickEvent(new ClickEvent.SuggestCommand(

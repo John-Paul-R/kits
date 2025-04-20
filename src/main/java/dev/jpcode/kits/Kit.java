@@ -3,6 +3,8 @@ package dev.jpcode.kits;
 import java.util.ArrayList;
 import java.util.Optional;
 
+import net.minecraft.registry.RegistryWrapper;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -78,10 +80,10 @@ public class Kit {
         public static final String COMMANDS = "commands";
     }
 
-    public NbtCompound toNbt(World world) {
+    public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
         try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.writeNbt", logger)) {
-            var root = NbtWriteView.create(logging, world.getRegistryManager());
+            var root = NbtWriteView.create(logging, registries);
 
             root.putInt(StorageKey.SCHEMA_VERSION, 1);
 
@@ -123,7 +125,7 @@ public class Kit {
         // other version handling...
     }
 
-    public static Kit fromNbt(NbtCompound kitNbt) {
+    public static Kit fromNbt(NbtCompound kitNbt, RegistryWrapper.WrapperLookup registries) {
         var kitInventory = new KitInventory();
 
         assert kitNbt != null;
@@ -131,7 +133,7 @@ public class Kit {
 
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
         try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.writeNbt", logger)) {
-            var nbt = NbtReadView.create(logging, world.getRegistryManager(), kitNbt);
+            var nbt = NbtReadView.create(logging, registries, kitNbt);
 
             var inventoryView = nbt.getTypedListView(StorageKey.INVENTORY, StackWithSlot.CODEC);
             kitInventory.readData(inventoryView);

@@ -67,6 +67,10 @@ public class KitsMod implements ModInitializer {
         // static ctor to register event handlers
         PlayerDataManager.getInstance();
 
+        ServerLifecycleEvents.SERVER_STARTING.register(s -> {
+            storage.init(s.getRegistryManager());
+        });
+
         ServerLifecycleEvents.SERVER_STARTED.register(storage::reloadKits);
 
         var commandRegistry = new KitsCommandRegistry(

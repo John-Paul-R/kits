@@ -12,9 +12,9 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.World;
 
 public class KitRing {
     private Text displayName;
@@ -98,14 +98,14 @@ public class KitRing {
         public static final String KITS = "kits";
     }
 
-    public void writeNbt(NbtCompound root, World world) {
+    public void writeNbt(NbtCompound root, RegistryWrapper.WrapperLookup registries) {
         root.putInt(KitRing.StorageKey.SCHEMA_VERSION, 1);
         root.putLong(KitRing.StorageKey.COOLDOWN, this.cooldownMs());
 
         if (this.displayName() != null) {
             root.putString(
                 KitRing.StorageKey.DISPLAY_NAME,
-                Text.Serialization.toJsonString(this.displayName(), world.getRegistryManager())
+                Text.Serialization.toJsonString(this.displayName(), registries)
             );
         }
 
@@ -129,7 +129,7 @@ public class KitRing {
             var kitsNbt = new NbtCompound();
             for (var kitEntry : kits.entrySet()) {
                 var kitNbt = new NbtCompound();
-                kitEntry.getValue().writeNbt(kitNbt, world);
+                kitEntry.getValue().writeNbt(kitNbt, registries);
                 kitsNbt.put(kitEntry.getKey(), kitNbt);
             }
             root.put(KitRing.StorageKey.KITS, kitsNbt);
@@ -152,7 +152,7 @@ public class KitRing {
         // other version handling...
     }
 
-    public static KitRing fromNbt(NbtCompound ringNbt, World world) {
+    public static KitRing fromNbt(NbtCompound ringNbt, RegistryWrapper.WrapperLookup registries) {
         assert ringNbt != null;
         handleReadVersion(ringNbt);
 
@@ -160,7 +160,7 @@ public class KitRing {
 
         var ringDisplayName = ringNbt
             .getString(StorageKey.DISPLAY_NAME)
-            .map(j -> Text.Serialization.fromLenientJson(j, world.getRegistryManager()))
+            .map(j -> Text.Serialization.fromLenientJson(j, registries))
             .orElse(null);
 
         var ringDisplayItem = ringNbt.getString(KitRing.StorageKey.DISPLAY_ITEM)
@@ -182,7 +182,7 @@ public class KitRing {
                             kitEntry.getKey(),
                             kitEntry.getValue()
                                 .asCompound()
-                                .map(nbt -> Kit.fromNbt(nbt, world.getRegistryManager()))
+                                .map(nbt -> Kit.fromNbt(nbt, registries))
                                 .orElseThrow()
                         )
                     );
