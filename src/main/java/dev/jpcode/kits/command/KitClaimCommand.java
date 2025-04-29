@@ -37,13 +37,21 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
         PlayerKitData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         var commandSource = player.getCommandSource();
 
-        Kit kit = storage.KIT_MAP.get(kitName);
+        var kitRecordOpt = storage.getKitRecord(kitName);
+        if (kitRecordOpt.isEmpty()) {
+            player.getCommandSource().sendError(Text.literal(
+                "Kit '%s' not found".formatted(kitName)
+            ));
+            return 2;
+        }
+        var kitRecord = kitRecordOpt.get();
+        Kit kit = kitRecord.kit();
         long currentTime = Util.getEpochTimeMs();
         Optional<Long> lastUsed = playerData.getKitUsedTime(kitName);
         long cooldown = kit.cooldownMs();
         long remainingTime = lastUsed.map(aLong -> (aLong + cooldown) - currentTime).orElse(0L);
 
-        if (!KitPerms.checkKit(commandSource, kitName)) {
+        if (!KitPerms.checkKit(commandSource, kitRecord)) {
             commandSource.sendError(Text.of(String.format(
                 "Insufficient permissions for kit '%s'.",
                 kitName)));

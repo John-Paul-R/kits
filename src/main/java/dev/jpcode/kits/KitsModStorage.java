@@ -3,10 +3,12 @@ package dev.jpcode.kits;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -21,6 +23,8 @@ import net.minecraft.util.WorldSavePath;
 
 import dev.jpcode.kits.config.KitsConfig;
 
+import org.jetbrains.annotations.Nullable;
+
 public class KitsModStorage {
     private final Logger logger;
     private final KitsConfig config;
@@ -32,7 +36,7 @@ public class KitsModStorage {
     /**
      * all kits, regardless of whether they're in a ring or not
      */
-    private final Map<String, Kit> ALL_KITS_MAP = new HashMap<>();
+    private final Map<String, KitRecord> ALL_KITS_MAP = new HashMap<>();
     private Kit starterKit;
 
     private File kitsDir;
@@ -46,18 +50,51 @@ public class KitsModStorage {
         this.config = config;
     }
 
+    public record KitRecord(@Nullable String ringName, @Nullable KitRing ring, String kitName, Kit kit) {
+        public static KitRecord standaloneKit(String kitName, Kit kit) {
+            return new KitRecord(null, null, kitName, kit);
+        }
+
+        public static KitRecord ringKit(String ringName, KitRing ring, String kitName, Kit kit) {
+            return new KitRecord(ringName, ring, kitName, kit);
+        }
+
+        public String permissionName() {
+            return ringName == null ? kitName : ringName;
+        }
+
+        public long cooldownMs() {
+            return ring == null ? kit.cooldownMs() : ring.cooldownMs();
+        }
+    }
+
     public void init(RegistryWrapper.WrapperLookup registries) {
         this.registries = registries;
     }
 
+    public Optional<KitRecord> getKitRecord(String kitName) {
+        return Optional.ofNullable(ALL_KITS_MAP.get(kitName));
+    }
+
     public void putKit(String kitName, Kit kit) throws IOException {
         KIT_MAP.put(kitName, kit);
+        ALL_KITS_MAP.put(kitName, KitRecord.standaloneKit(kitName, kit));
         saveKit(kitName, kit);
     }
 
     public void putKitRing(String ringName, KitRing ring)
         throws IOException
     {
+        KIT_RING_MAP.put(ringName, ring);
+        ring.kits().forEach((k, kit) -> {
+            if (ALL_KITS_MAP.containsKey(k)) {
+                logger.warn("Overwriting existing kit '{}' with kit '{}' from kit ring '{}' (this means you have more than one kit with the same name)",
+                    k, k, ringName
+                );
+            }
+            ALL_KITS_MAP.put(k, KitRecord.ringKit(ringName, ring, k, kit));
+        });
+
         saveKitRing(ringName, ring);
     }
 
@@ -76,8 +113,9 @@ public class KitsModStorage {
         ring.addKit(kitName, kit);
 
         saveKitRing(ringName, ring);
-        KIT_MAP.remove(kitName);
-        Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
+        try {
+            Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
+        } catch (NoSuchFileException ign) {}
     }
 
     public void removeKitFromRing(String ringName, String kitName)
@@ -93,6 +131,9 @@ public class KitsModStorage {
             ));
         }
 
+        KIT_MAP.put(kitName, removed);
+
+        saveKit(kitName, removed);
         saveKitRing(ringName, ring);
     }
 
@@ -163,7 +204,7 @@ public class KitsModStorage {
                                     k, k, ringName
                                 );
                             }
-                            ALL_KITS_MAP.put(k, kit);
+                            ALL_KITS_MAP.put(k, KitRecord.ringKit(ringName, kitRing, k, kit));
                         });
                     } catch (IOException | NullPointerException | NbtCrashException e) {
                         logger.error("Error while loading kit ring '{}'", kitFile.getPath());
@@ -184,7 +225,7 @@ public class KitsModStorage {
                             kitName, kitName
                         );
                     }
-                    ALL_KITS_MAP.put(kitName, kit);
+                    ALL_KITS_MAP.put(kitName, KitRecord.standaloneKit(kitName, kit));
                 } catch (IOException | NullPointerException | NbtCrashException e) {
                     logger.error("Error while loading kit '{}'", kitFile.getPath());
                     e.printStackTrace();

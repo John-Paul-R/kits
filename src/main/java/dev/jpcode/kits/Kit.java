@@ -23,7 +23,7 @@ public class Kit {
 
     private final KitInventory inventory;
     /** a negative cooldown yields a one-time use kit. */
-    private final long cooldownMs;
+    private long cooldownMs;
     private @Nullable Item displayItem;
     private final ArrayList<String> commands;
 
@@ -46,6 +46,10 @@ public class Kit {
 
     public long cooldownMs() {
         return cooldownMs;
+    }
+
+    public void setCooldownMs(long cooldownMs) {
+        this.cooldownMs = cooldownMs;
     }
 
     public Optional<Item> displayItem() {

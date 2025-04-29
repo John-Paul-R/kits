@@ -108,7 +108,7 @@ public class PlayerKitData extends PlayerData {
 
     public boolean mayClaimFromRing(String ringName, String kitName) {
         var ringChoice = this.ringSelections.get(ringName);
-        return ringChoice != null && ringChoice.equals(kitName);
+        return ringChoice == null || ringChoice.equals(kitName);
     }
 
 

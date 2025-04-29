@@ -14,4 +14,8 @@ public final class KitPerms {
     public static boolean checkKit(ServerCommandSource source, String kitName) {
         return Permissions.check(source, "kits.claim." + kitName, 4);
     }
+
+    public static boolean checkKit(ServerCommandSource source, KitsModStorage.KitRecord kitRecord) {
+        return Permissions.check(source, "kits.claim." + kitRecord.permissionName(), 4);
+    }
 }

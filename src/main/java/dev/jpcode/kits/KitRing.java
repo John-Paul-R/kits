@@ -156,7 +156,7 @@ public class KitRing {
         assert ringNbt != null;
         handleReadVersion(ringNbt);
 
-        long cooldown = ringNbt.getLong(KitRing.StorageKey.COOLDOWN).orElse(0L);
+        long ringCooldown = ringNbt.getLong(KitRing.StorageKey.COOLDOWN).orElse(0L);
 
         var ringDisplayName = ringNbt
             .getString(StorageKey.DISPLAY_NAME)
@@ -177,19 +177,23 @@ public class KitRing {
             .map(kitsNbt -> {
                 var map = new HashMap<String, Kit>();
                 kitsNbt.entrySet()
-                    .forEach(kitEntry ->
+                    .forEach(kitEntry -> {
+                        var kit = kitEntry.getValue()
+                            .asCompound()
+                            .map(nbt -> Kit.fromNbt(nbt, registries))
+                            .orElseThrow();
+
+                        kit.setCooldownMs(ringCooldown);
+
                         map.put(
                             kitEntry.getKey(),
-                            kitEntry.getValue()
-                                .asCompound()
-                                .map(nbt -> Kit.fromNbt(nbt, registries))
-                                .orElseThrow()
-                        )
-                    );
+                            kit
+                        );
+                    });
                 return map;
             })
             .orElseGet(HashMap::new);
 
-        return new KitRing(ringDisplayName, cooldown, ringDisplayItem, kits, commands);
+        return new KitRing(ringDisplayName, ringCooldown, ringDisplayItem, kits, commands);
     }
 }
