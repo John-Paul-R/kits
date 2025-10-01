@@ -17,9 +17,17 @@ public final class Codecs {
     private Codecs() {}
 
     /**
+     * Codec for a map of kits.
+     * Ensures mutable HashMap on decode.
+     */
+    public static final Codec<HashMap<String, Kit>> KITS_MAP =
+        Codec.unboundedMap(Codec.STRING, Kit.CODEC)
+            .xmap(HashMap::new, map -> map); // Ensure mutable HashMap
+
+    /**
      * Codec for ring metadata (stored in _ring.json).
-     * Kits field is optional - omitted when empty (for new directory format),
-     * included when present (for loading old .ring.json format during migration).
+     * Does NOT include kits field - kits are stored as separate files in the ring directory.
+     * Use RING_METADATA_WITH_KITS for loading legacy .ring.json files.
      */
     public static final Codec<KitRing> RING_METADATA = RecordCodecBuilder.create(instance ->
         instance.group(
@@ -38,14 +46,42 @@ public final class Codecs {
                 .optionalFieldOf(KitRing.StorageKey.DISPLAY_ITEM)
                 .forGetter(KitRing::displayItem),
 
-            // Kits map (optional, for lo    private void paintKitsScreen(ServerPlayerEntity player, SimpleGuiBuilder simpleGuiBuilder, PlayerKitData playerData, long currentTime) {                .map(Map.Entry::getKey)CUSTOM_NAMEkitRecordading old format)
-            Codec.unboundedMap(Codec.STRING, Kit.CODEC)
-                .xmap(HashMap::new, map -> map) // Ensure mutable HashMap
+            // Commands list
+            Codec.STRING.listOf()
+                .xmap(ArrayList::new, list -> list)
+                .optionalFieldOf(KitRing.StorageKey.COMMANDS, new ArrayList<>())
+                .forGetter(KitRing::commands)
+
+        ).apply(instance, (displayName, cooldown, displayItem, commands) ->
+            KitRing.createWithData(displayName, cooldown, displayItem, Optional.empty(), commands)
+        )
+    );
+
+    /**
+     * Codec for loading legacy .ring.json files that include embedded kits.
+     * Used only for migration from old format.
+     */
+    public static final Codec<KitRing> RING_METADATA_WITH_KITS = RecordCodecBuilder.create(instance ->
+        instance.group(
+            // Display name
+            TextCodecs.CODEC
+                .optionalFieldOf(KitRing.StorageKey.DISPLAY_NAME)
+                .forGetter(ring -> Optional.ofNullable(ring.displayName())),
+
+            // Cooldown
+            Codec.LONG
+                .fieldOf(KitRing.StorageKey.COOLDOWN)
+                .forGetter(KitRing::cooldownMs),
+
+            // Display item
+            Registries.ITEM.getCodec()
+                .optionalFieldOf(KitRing.StorageKey.DISPLAY_ITEM)
+                .forGetter(KitRing::displayItem),
+
+            // Kits map (for loading old format)
+            KITS_MAP
                 .optionalFieldOf(KitRing.StorageKey.KITS)
-                .forGetter(ring -> ring.kits().isEmpty()
-                    ? Optional.empty()
-                    : Optional.of(ring.kits())
-                ),
+                .forGetter(ring -> Optional.of(ring.kits())),
 
             // Commands list
             Codec.STRING.listOf()

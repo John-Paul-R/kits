@@ -299,7 +299,7 @@ public class KitsModStorage {
                         var jsonElement = JsonParser.parseString(json);
                         String fileName = kitFile.getName();
                         String ringName = fileName.substring(0, fileName.length() - ".ring.json".length());
-                        var kitRing = KitRing.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), jsonElement).getOrThrow();
+                        var kitRing = dev.jpcode.kits.codec.Codecs.RING_METADATA_WITH_KITS.parse(RegistryOps.of(JsonOps.INSTANCE, registries), jsonElement).getOrThrow();
 
                         // Set cooldown tracker keys for all kits
                         kitRing.kits().forEach((k, kit) -> {
