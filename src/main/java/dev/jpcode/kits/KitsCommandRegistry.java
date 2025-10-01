@@ -9,6 +9,7 @@ import me.lucko.fabric.api.permissions.v0.Permissions;
 import org.apache.logging.log4j.Logger;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -304,7 +305,8 @@ public final class KitsCommandRegistry {
                                 LongArgumentType.getLong(context, "cooldown"),
                                 null, // displayItem
                                 new HashMap<>(),
-                                new ArrayList<>()
+                                new ArrayList<>(),
+                                false // permanentChoice
                             )
                         );
                     })
@@ -323,7 +325,8 @@ public final class KitsCommandRegistry {
                                     ),
                                     null, // displayItem
                                     new HashMap<>(),
-                                    new ArrayList<>()
+                                    new ArrayList<>(),
+                                    false // permanentChoice
                                 )
                             );
                         })))
@@ -347,6 +350,39 @@ public final class KitsCommandRegistry {
                             throw new KitCommandSyntaxException(Text.literal("Failed to save kit ring metadata."));
                         }
                         return 0;
+                    })
+                )
+            ).build()
+        );
+
+        ring.then(literal("permanentChoice")
+            .requires(Permissions.require("kits.manage", 4))
+            .then(argument("ring_name", StringArgumentType.word())
+                .suggests(kitSuggestions::kitRingsSuggestionProvider)
+                .then(argument("enabled", BoolArgumentType.bool())
+                    .executes(context -> {
+                        var ringName = StringArgumentType.getString(context, "ring_name");
+                        var enabled = BoolArgumentType.getBool(context, "enabled");
+
+                        var existingRing = storage.KIT_RING_MAP.get(ringName);
+                        if (existingRing == null) {
+                            context.getSource().sendError(Text.of("Kit ring not found."));
+                            return -1;
+                        }
+
+                        existingRing.setPermanentChoice(enabled);
+                        try {
+                            storage.saveKitRingMetadata(ringName, existingRing);
+                        } catch (IOException e) {
+                            throw new KitCommandSyntaxException(Text.literal("Failed to save kit ring metadata."));
+                        }
+
+                        context.getSource().sendFeedback(() ->
+                            Text.of(String.format("Permanent choice for ring '%s' set to: %s", ringName, enabled)),
+                            true
+                        );
+
+                        return 1;
                     })
                 )
             ).build()
@@ -407,7 +443,7 @@ public final class KitsCommandRegistry {
                         var targetPlayers = EntityArgumentType.getPlayers(context, "players");
 
                         for (var player : targetPlayers) {
-                            ((ServerPlayerEntityAccess) player).kits$getPlayerData().resetRingSelection(ringName);
+                            ((ServerPlayerEntityAccess) player).kits$getPlayerData().resetRingChoice(ringName);
                         }
 
                         context.getSource().sendFeedback(() ->

@@ -42,6 +42,16 @@ Requires Permission: `kits.manage`
 
 Sets the display item shown in the kit selection GUI for this ring.
 
+### Permanent Choice
+
+Command: `/kit ring permanentChoice <ring_name> <true/false>`\
+Requires Permission: `kits.manage`
+
+When enabled, players can only claim from the first kit they choose in this ring.
+Once a player claims any kit from a permanent choice ring, they cannot claim any
+other kit from that ring - their choice becomes permanent. This is useful for
+class selection systems or one-time specialization choices.
+
 ### Removing Rings
 
 #### Remove Ring (Extract Kits)
@@ -64,8 +74,9 @@ it contains.
 Command: `/kit resetPlayerRingSelection <player> <ring_name>`\
 Requires Permission: `kits.manage`
 
-Resets the cooldown for a specific ring, allowing the player to claim from it
-again.
+Resets the ring selection for a specific player. For permanent choice rings, this
+allows the player to make a new selection. Also resets the cooldown for the ring,
+allowing the player to claim from it again.
 
 ### Managing Ring Commands
 
@@ -105,6 +116,8 @@ The `_ring.json` file contains only the ring's metadata:
 - `display_item` (optional) - The item shown in the kit selection GUI
 - `commands` - List of commands to execute when any kit from this ring is
   claimed
+- `permanent_choice` (optional, defaults to `false`) - When `true`, players can
+  only claim from their first chosen kit in this ring
 
 Individual kit files are stored separately as `<kitname>.json` files within the
 ring directory.

@@ -50,10 +50,15 @@ public final class Codecs {
             Codec.STRING.listOf()
                 .xmap(ArrayList::new, list -> list)
                 .optionalFieldOf(KitRing.StorageKey.COMMANDS, new ArrayList<>())
-                .forGetter(KitRing::commands)
+                .forGetter(KitRing::commands),
 
-        ).apply(instance, (displayName, cooldown, displayItem, commands) ->
-            KitRing.createWithData(displayName, cooldown, displayItem, Optional.empty(), commands)
+            // Permanent choice
+            Codec.BOOL
+                .optionalFieldOf(KitRing.StorageKey.PERMANENT_CHOICE, false)
+                .forGetter(KitRing::permanentChoice)
+
+        ).apply(instance, (displayName, cooldown, displayItem, commands, permanentChoice) ->
+            KitRing.createWithData(displayName, cooldown, displayItem, Optional.empty(), commands, permanentChoice)
         )
     );
 
@@ -87,7 +92,12 @@ public final class Codecs {
             Codec.STRING.listOf()
                 .xmap(ArrayList::new, list -> list)
                 .optionalFieldOf(KitRing.StorageKey.COMMANDS, new ArrayList<>())
-                .forGetter(KitRing::commands)
+                .forGetter(KitRing::commands),
+
+            // Permanent choice
+            Codec.BOOL
+                .optionalFieldOf(KitRing.StorageKey.PERMANENT_CHOICE, false)
+                .forGetter(KitRing::permanentChoice)
 
         ).apply(instance, KitRing::createWithData)
     );
