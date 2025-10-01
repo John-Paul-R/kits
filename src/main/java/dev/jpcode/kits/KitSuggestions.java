@@ -42,13 +42,9 @@ public final class KitSuggestions {
 //        );
     }
 
-    public Stream<Map.Entry<String, Kit>> getAllNonRingKitsForPlayer(ServerPlayerEntity player) {
+    public Stream<KitsModStorage.KitRecord> getAllNonRingKitsForPlayer(ServerPlayerEntity player) {
         var source = player.getCommandSource();
-        return storage.KIT_MAP.entrySet()
-            .stream()
-            .filter(kitEntry ->
-                KitPerms.checkKit(source, kitEntry.getKey())
-            );
+        return storage.getNonRingKitRecords(k -> KitPerms.checkKit(source, k));
     }
 
     public Stream<Map.Entry<String, KitRing>> getAllKitRingsForPlayer(ServerPlayerEntity player) {
@@ -93,7 +89,7 @@ public final class KitSuggestions {
         return ListSuggestion.getSuggestionsBuilder(
             builder,
             getAllNonRingKitsForPlayer(context.getSource().getPlayer())
-                .map(Map.Entry::getKey)
+                .map(KitsModStorage.KitRecord::kitName)
                 .toList()
         );
     }

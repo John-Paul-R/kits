@@ -31,8 +31,8 @@ public class PlayerKitData extends PlayerData {
         ringSelections = new HashMap<>();
     }
 
-    public void useKit(String kitName) {
-        kitUsedTimes.put(kitName, Util.getEpochTimeMs());
+    public void useKit(String kitName, String cooldownKey) {
+        kitUsedTimes.put(cooldownKey, Util.getEpochTimeMs());
         markDirty();
         save(DynamicRegistryManager.EMPTY);
     }

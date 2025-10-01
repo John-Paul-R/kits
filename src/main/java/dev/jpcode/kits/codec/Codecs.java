@@ -38,7 +38,7 @@ public final class Codecs {
                 .optionalFieldOf(KitRing.StorageKey.DISPLAY_ITEM)
                 .forGetter(KitRing::displayItem),
 
-            // Kits map (optional, for loading old format)
+            // Kits map (optional, for lo    private void paintKitsScreen(ServerPlayerEntity player, SimpleGuiBuilder simpleGuiBuilder, PlayerKitData playerData, long currentTime) {                .map(Map.Entry::getKey)CUSTOM_NAMEkitRecordading old format)
             Codec.unboundedMap(Codec.STRING, Kit.CODEC)
                 .xmap(HashMap::new, map -> map) // Ensure mutable HashMap
                 .optionalFieldOf(KitRing.StorageKey.KITS)

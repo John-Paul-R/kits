@@ -72,7 +72,7 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
         }
 
         PlayerInventory playerInventory = player.getInventory();
-        playerData.useKit(kitName);
+        playerData.useKit(kitName, kitRecord.cooldownKey());
         offerAllCopies(kit.inventory(), playerInventory);
         if (!kit.commands().isEmpty()) runCommands(player, kit.commands());
 
