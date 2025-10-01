@@ -358,12 +358,11 @@ public final class KitsCommandRegistry {
                 .suggests(kitSuggestions::kitRingsSuggestionProvider)
                 .executes(context -> {
                     String ringName = StringArgumentType.getString(context, "ring_name");
-                    storage.KIT_RING_MAP.remove(ringName);
 
                     try {
-                        Files.delete(KitsMod.getKitsDir().toPath().resolve(ringName + ".ring.nbt"));
+                        storage.removeKitRingAndKits(ringName);
                     } catch (IOException e) {
-                        context.getSource().sendError(Text.of("Could not find kit file on disk."));
+                        context.getSource().sendError(Text.of("Could not delete kit ring directory on disk."));
                         return -1;
                     }
 
@@ -380,16 +379,18 @@ public final class KitsCommandRegistry {
                 .suggests(kitSuggestions::kitRingsSuggestionProvider)
                 .executes(context -> {
                     String ringName = StringArgumentType.getString(context, "ring_name");
-                    storage.KIT_MAP.remove(ringName);
 
                     try {
-                        Files.delete(KitsMod.getKitsDir().toPath().resolve(ringName + ".nbt"));
+                        storage.removeRingExtractKits(ringName);
+                    } catch (IllegalArgumentException e) {
+                        context.getSource().sendError(Text.of("Kit ring not found."));
+                        return -1;
                     } catch (IOException e) {
-                        context.getSource().sendError(Text.of("Could not find kit file on disk."));
+                        context.getSource().sendError(Text.of("Error removing ring: " + e.getMessage()));
                         return -1;
                     }
 
-                    context.getSource().sendFeedback(() -> Text.of(String.format("Removed kit '%s'.", ringName)), true);
+                    context.getSource().sendFeedback(() -> Text.of(String.format("Removed kit ring '%s' and moved all kits to standalone.", ringName)), true);
 
                     return 1;
                 })

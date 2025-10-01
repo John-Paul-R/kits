@@ -123,6 +123,97 @@ public class KitsModStorage {
         saveKitRing(ringName, ring);
     }
 
+    public void removeKitRingAndKits(String ringName) throws IOException {
+        var removedRing = KIT_RING_MAP.remove(ringName);
+        if (removedRing != null) {
+            removedRing.kits().keySet().forEach(ALL_KITS_MAP::remove);
+        }
+
+        // Delete the ring directory and all its contents
+        deleteRingDirectory(ringName);
+    }
+
+    public void convertRingKitsToStandalone(String ringName, KitRing ring) {
+        for (var entry : ring.kits().entrySet()) {
+            String kitName = entry.getKey();
+            Kit kit = entry.getValue();
+            KIT_MAP.put(kitName, kit);
+            ALL_KITS_MAP.put(kitName, KitRecord.standaloneKit(kitName, kit));
+        }
+    }
+
+    public void deleteRingDirectory(String ringName) throws IOException {
+        // Delete the ring directory and all its contents
+        Path ringDir = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring");
+        if (Files.exists(ringDir)) {
+            try (var stream = Files.walk(ringDir)) {
+                stream.sorted(java.util.Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            logger.warn("Failed to delete path '{}' in ring directory", path, e);
+                        }
+                    });
+            }
+        }
+
+        // Clean up legacy formats
+        Files.deleteIfExists(KitsMod.getKitsDir().toPath().resolve(ringName + ".ring.nbt"));
+        Files.deleteIfExists(KitsMod.getKitsDir().toPath().resolve(ringName + ".ring.json"));
+    }
+
+    public void removeRingExtractKits(String ringName) throws IOException {
+        var removedRing = KIT_RING_MAP.remove(ringName);
+        if (removedRing == null) {
+            throw new IllegalArgumentException("Kit ring not found: " + ringName);
+        }
+
+        // Extract all kits from the ring and save them as standalone kits
+        Path ringDir = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring");
+
+        for (var entry : removedRing.kits().entrySet()) {
+            String kitName = entry.getKey();
+            Kit kit = entry.getValue();
+
+            KIT_MAP.put(kitName, kit);
+            ALL_KITS_MAP.put(kitName, new KitRecord(null, null, kitName, kit));
+
+            // Move kit file from ring directory to kits directory
+            Path kitInRingPath = ringDir.resolve(kitName + ".json");
+            Path kitStandalonePath = KitsMod.getKitsDir().toPath().resolve(kitName + ".json");
+
+            if (Files.exists(kitInRingPath)) {
+                Files.move(kitInRingPath, kitStandalonePath, StandardCopyOption.ATOMIC_MOVE);
+            } else {
+                // If file doesn't exist, save it fresh
+                saveKit(kitName, kit);
+            }
+        }
+
+        // Update storage maps
+        convertRingKitsToStandalone(ringName, removedRing);
+
+        // Delete the (now empty) ring directory
+        deleteRingDirectory(ringName);
+    }
+
+    public void removeKit(String kitName) throws IOException {
+        KIT_MAP.remove(kitName);
+        ALL_KITS_MAP.remove(kitName);
+
+        // Try deleting both JSON and legacy NBT formats
+        Path jsonPath = KitsMod.getKitsDir().toPath().resolve(kitName + ".json");
+        Path nbtPath = KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt");
+
+        boolean jsonDeleted = Files.deleteIfExists(jsonPath);
+        boolean nbtDeleted = Files.deleteIfExists(nbtPath);
+
+        if (!jsonDeleted && !nbtDeleted) {
+            throw new NoSuchFileException(kitName + " (checked both .json and .nbt)");
+        }
+    }
+
     public void putKitInRing(String ringName, String kitName)
         throws KitCommandSyntaxException, IOException
     {
@@ -136,6 +227,8 @@ public class KitsModStorage {
         }
 
         ring.addKit(kitName, kit);
+
+        ALL_KITS_MAP.put(kitName, new KitRecord(ringName, ring, kitName, kit));
 
         // Move the kit file into the ring directory
         Path ringDir = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring");
@@ -270,7 +363,6 @@ public class KitsModStorage {
                                 var kit = Kit.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), kitJsonElement).getOrThrow();
 
                                 kit.setCooldownTrackerKey(ringName);
-                                kit.setCooldownMs(kitRing.cooldownMs());
                                 kitRing.addKit(kitName, kit);
                             }
                         }
@@ -304,7 +396,6 @@ public class KitsModStorage {
                         // Set cooldown tracker keys for all kits
                         kitRing.kits().forEach((k, kit) -> {
                             kit.setCooldownTrackerKey(ringName);
-                            kit.setCooldownMs(kitRing.cooldownMs());
                         });
 
                         KIT_RING_MAP.put(ringName, kitRing);

@@ -172,7 +172,6 @@ public class KitRing {
         // Set cooldown tracker keys for all kits
         for (Kit kit : ring.kits.values()) {
             kit.setCooldownTrackerKey(cooldownTrackerKey);
-            kit.setCooldownMs(ring.cooldownMs);
         }
 
         return new LoadResult(ring, fixResult.wasUpgraded);
