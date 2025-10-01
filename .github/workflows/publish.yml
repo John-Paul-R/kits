@@ -4,6 +4,32 @@ name: Publish Release
 
 on:
   workflow_dispatch:
+    inputs:
+      abort_on_tag_conflict:
+        description: 'Abort if tag already exists'
+        required: true
+        type: boolean
+        default: true
+      publish_github_packages:
+        description: 'Publish to GitHub Packages'
+        required: true
+        type: boolean
+        default: true
+      publish_modrinth:
+        description: 'Publish to Modrinth'
+        required: true
+        type: boolean
+        default: true
+      publish_curseforge:
+        description: 'Publish to CurseForge'
+        required: true
+        type: boolean
+        default: true
+      publish_github_release:
+        description: 'Publish GitHub Release'
+        required: true
+        type: boolean
+        default: true
 
 env:
   JAVA_VERSION: 21
@@ -37,6 +63,7 @@ jobs:
           echo "Tag will be: $TAG"
 
       - name: ❌ Check if tag already exists
+        if: inputs.abort_on_tag_conflict
         run: |
           if git ls-remote --tags origin | grep -q "refs/tags/${{ steps.version.outputs.tag }}$"; then
             echo "❌ Tag ${{ steps.version.outputs.tag }} already exists!"
@@ -110,6 +137,7 @@ jobs:
           path: '**/build/reports/'
 
       - name: 📤 Publish to GitHub Packages
+        if: inputs.publish_github_packages
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -117,22 +145,25 @@ jobs:
         run: gradle publishMavenJavaPublicationToGitHubRepository
 
       - name: 📤 Publish to Modrinth
+        if: inputs.publish_modrinth
         env:
           MODRINTH: ${{ secrets.MODRINTH }}
           IS_PIPELINE: true
         run: gradle publishModrinth
 
       - name: 📤 Publish to CurseForge
+        if: inputs.publish_curseforge
         env:
           CURSEFORGE: ${{ secrets.CURSEFORGE }}
           IS_PIPELINE: true
         run: gradle publishCurseforge
 
       - name: 📤 Create GitHub Release
+        if: inputs.publish_github_release
         env:
           GITHUB: ${{ secrets.GITHUB_TOKEN }}
           IS_PIPELINE: true
-        run: gradle publishGithub
+        run: gradle publishGitHub
 
       - name: 🧨 Cleanup Gradle cache
         run: |
