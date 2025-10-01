@@ -59,7 +59,7 @@ public final class KitsCommandRegistry {
     int addKit(CommandContext<ServerCommandSource> context, String kitName, PlayerInventory sourceInventory, long cooldownMs) {
         var kitInventory = new KitInventory();
         kitInventory.copyFrom(sourceInventory);
-        return addKit(context, kitName, new Kit(kitInventory, cooldownMs));
+        return addKit(context, kitName, new Kit(kitInventory, cooldownMs, kitName));
     }
 
     int addKit(CommandContext<ServerCommandSource> context, String kitName, Kit kit)

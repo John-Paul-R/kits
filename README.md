@@ -9,10 +9,9 @@ Permissions-based player kits for Fabric Servers.
 [![Release](https://img.shields.io/github/v/release/John-Paul-R/kits?style=for-the-badge&include_prereleases&sort=semver)][releases]
 [![Available For](https://img.shields.io/badge/dynamic/json?label=Available%20For&style=for-the-badge&color=34aa2f&query=$[:]&url=https%3A%2F%2Fwww.jpcode.dev%2Fkits%2Fsupported_mc_versions.json)][modrinth:files]
 
-
 [![Modrinth Downloads](https://img.shields.io/modrinth/dt/kits?color=00AF5C&label=modrinth&style=for-the-badge&logo=modrinth)][modrinth:files]
 [![Curseforge Downloads](https://img.shields.io/badge/dynamic/json?color=f16436&style=for-the-badge&label=CurseForge&query=downloadCount&url=https://www.fibermc.com/api/v1.0/ForeignMods/507127&logo=CurseForge)][curseforge:files]
-[![GitHub Downloads (all releases)](https://img.shields.io/github/downloads/John-Paul-R/kits/total?style=for-the-badge&amp;label=GitHub&amp;prefix=downloads%20&amp;color=4078c0&amp;logo=github)][releases]
+[![GitHub Downloads (all releases)](https://img.shields.io/github/downloads/John-Paul-R/kits/total?style=for-the-badge&label=GitHub&prefix=downloads%20&color=4078c0&logo=github)][releases]
 
 </div>
 
@@ -34,10 +33,9 @@ Requires Permission: `kits.manage`
 To add a kit, simply place the items you would like to be included in this kit
 anywhere in your inventory and run the command `/kit add`.
 
-> [!NOTE]
-> `[time_unit]` may be one of `d` (day), `h` (hour), `m` (minute), `s` (second),
-> `y` (year). If no time unit is specified, `cooldown` is interpreted as
-> milliseconds.
+> [!NOTE] > `[time_unit]` may be one of `d` (day), `h` (hour), `m` (minute), `s`
+> (second), `y` (year). If no time unit is specified, `cooldown` is interpreted
+> as milliseconds.
 
 ### Claiming Kits
 
@@ -57,13 +55,14 @@ permissions for.
 Command: `/kit remove <kit_name>`\
 Requires Permission: `kits.manage`
 
-To remove a kit, simply type `/kit remove <kit_name>`. This *irreversibly and
-completely* **deletes** the specified kit from the server, for all users.
+To remove a kit, simply type `/kit remove <kit_name>`. This _irreversibly and
+completely_ **deletes** the specified kit from the server, for all users.
 
 ### Reset Player Kit Cooldowns
 
 If, as a moderator, you wish to reset a player's kit cooldowns, allowing them to
-regain access to already-claimed kits, you can do so with the following commands:
+regain access to already-claimed kits, you can do so with the following
+commands:
 
 #### Reset a single kit
 
@@ -93,8 +92,8 @@ entirely new kits.
 ### Player Kit Usage Files
 
 Whenever a player successfully claims a kit, the time at which this kit was
-claimed is recorded in a user-specific file named `<player_uuid>.nbt` in the directory
-`world/kits_user_data`.
+claimed is recorded in a user-specific file named `<player_uuid>.nbt` in the
+directory `world/kits_user_data`.
 
 If you wish to reset or modify when a user can next use a kit that they have
 already claimed, you can edit the time specified in this file (stored as
@@ -105,8 +104,8 @@ cooldowns for a given user, simply delete the nbt file that corresponds to them.
 
 ## Contributing
 
-Thank you for considering contributing to Kits! Please see the
-[Contribution Guidelines][contributing].
+Thank you for considering contributing to Kits! Please see the [Contribution
+Guidelines][contributing].
 
 ## Licence
 

@@ -152,7 +152,11 @@ public class KitRing {
         // other version handling...
     }
 
-    public static KitRing fromNbt(NbtCompound ringNbt, RegistryWrapper.WrapperLookup registries) {
+    public static KitRing fromNbt(
+        String cooldownTrackerKey,
+        NbtCompound ringNbt,
+        RegistryWrapper.WrapperLookup registries
+    ) {
         assert ringNbt != null;
         handleReadVersion(ringNbt);
 
@@ -180,7 +184,7 @@ public class KitRing {
                     .forEach(kitEntry -> {
                         var kit = kitEntry.getValue()
                             .asCompound()
-                            .map(nbt -> Kit.fromNbt(nbt, registries))
+                            .map(nbt -> Kit.fromNbt(cooldownTrackerKey, nbt, registries))
                             .orElseThrow();
 
                         kit.setCooldownMs(ringCooldown);

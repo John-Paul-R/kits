@@ -37,7 +37,7 @@ public class KitsCommand implements Command<ServerCommandSource> {
     public int run(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
         var player = ctx.getSource().getPlayerOrThrow();
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        var allPlayerKits = kitSuggestions.getAllKitsForPlayer(player);
+        var allPlayerKits = kitSuggestions.getAllNonRingKitsForPlayer(player);
 
         long currentTime = Util.getEpochTimeMs();
 
@@ -49,7 +49,7 @@ public class KitsCommand implements Command<ServerCommandSource> {
         for (var kitEntry : allPlayerKits.toList()) {
             simpleGuiBuilder.setSlot(
                 i++,
-                createKitItemStack(playerData, kitEntry.getKey(), kitEntry.getValue(), currentTime),
+                createKitItemStack(playerData, kitEntry.getKey(), kitEntry.getValue(), currentTime, kitEntry.getKey()),
                 (index, type, action, gui) -> {
                     if (type.isLeft) {
                         kitClaimCommand.exec(player, kitEntry.getKey());
@@ -64,8 +64,14 @@ public class KitsCommand implements Command<ServerCommandSource> {
         return Command.SINGLE_SUCCESS;
     }
 
-    private static ItemStack createKitItemStack(PlayerKitData playerData, String kitName, Kit kit, long currentTime) {
-        var kitCooldownRemainingMs = playerData.getKitCooldownRemainingMs(kitName, kit, currentTime);
+    private static ItemStack createKitItemStack(
+        PlayerKitData playerData,
+        String kitName,
+        Kit kit,
+        long currentTime,
+        String cooldownTrackerKey
+    ) {
+        var kitCooldownRemainingMs = playerData.getKitCooldownRemainingMs(cooldownTrackerKey, kit, currentTime);
         var canUseKit = kitCooldownRemainingMs <= 0;
 
         var defaultItemStack = (

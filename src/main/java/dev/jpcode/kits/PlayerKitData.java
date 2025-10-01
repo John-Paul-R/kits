@@ -37,8 +37,8 @@ public class PlayerKitData extends PlayerData {
         }
     }
 
-    public long getKitCooldownRemainingMs(String kitName, Kit kit, long timeMs) {
-        var kitUsedTimeOpt = getKitUsedTime(kitName);
+    public long getKitCooldownRemainingMs(KitsModStorage.KitRecord kit, long timeMs) {
+        var kitUsedTimeOpt = getKitUsedTime(kit.permissionName());
         var kitCooldownMs = kit.cooldownMs();
         if (kitUsedTimeOpt.isEmpty()) {
             // kit never used, can't be on any sort of cd, even if a one-time kit
@@ -53,10 +53,6 @@ public class PlayerKitData extends PlayerData {
         }
         // have a non-negative cd, so not a one-time kit. Do the cd math.
         return Math.max(0, (kitUsedTimeOpt.get() + kitCooldownMs) - timeMs);
-    }
-
-    public boolean isKitOnCooldownAtTime(Map.Entry<String, Kit> kit, long timeMs) {
-        return getKitCooldownRemainingMs(kit.getKey(), kit.getValue(), timeMs) <= 0;
     }
 
     @Override
@@ -115,5 +111,13 @@ public class PlayerKitData extends PlayerData {
     public void resetAllKits() {
         this.kitUsedTimes.clear();
         this.markDirty();
+    }
+
+    public boolean canSeeKit(KitsModStorage.KitRecord kit) {
+        return KitPerms.checkKit(this.getPlayer().getCommandSource(), kit);
+    }
+
+    public boolean mayClaim(KitsModStorage.KitRecord kit) {
+        return canSeeKit(kit) && this.;
     }
 }

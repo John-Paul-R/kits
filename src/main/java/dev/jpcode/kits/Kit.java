@@ -26,18 +26,27 @@ public class Kit {
     private long cooldownMs;
     private @Nullable Item displayItem;
     private final ArrayList<String> commands;
+    private String cooldownTrackerKey;
 
-    public Kit(KitInventory inventory, long cooldownMs) {
+    public Kit(KitInventory inventory, long cooldownMs, String cooldownTrackerKey) {
         this.inventory = inventory;
         this.cooldownMs = cooldownMs;
+        this.cooldownTrackerKey = cooldownTrackerKey;
         commands = new ArrayList<>();
     }
 
-    public Kit(KitInventory inventory, long cooldownMs, @Nullable Item displayItem, ArrayList<String> commands) {
+    public Kit(
+        KitInventory inventory,
+        long cooldownMs,
+        @Nullable Item displayItem,
+        ArrayList<String> commands,
+        String cooldownTrackerKey
+    ) {
         this.inventory = inventory;
         this.cooldownMs = cooldownMs;
         this.displayItem = displayItem;
         this.commands = commands;
+        this.cooldownTrackerKey = cooldownTrackerKey;
     }
 
     public KitInventory inventory() {
@@ -129,7 +138,11 @@ public class Kit {
         // other version handling...
     }
 
-    public static Kit fromNbt(NbtCompound kitNbt, RegistryWrapper.WrapperLookup registries) {
+    public static Kit fromNbt(
+        String cooldownTrackerKey,
+        NbtCompound kitNbt,
+        RegistryWrapper.WrapperLookup registries
+    ) {
         var kitInventory = new KitInventory();
 
         assert kitNbt != null;
@@ -153,6 +166,6 @@ public class Kit {
             .map(l -> new ArrayList<>(kitNbt.getList(StorageKey.COMMANDS).orElseThrow().stream().map(e -> e.asString().orElseThrow()).toList()))
             .orElseGet(ArrayList::new);
 
-        return new Kit(kitInventory, cooldown, kitDisplayItem, commands);
+        return new Kit(kitInventory, cooldown, kitDisplayItem, commands, cooldownTrackerKey);
     }
 }

@@ -9,9 +9,12 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtCrashException;
@@ -22,8 +25,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.WorldSavePath;
 
 import dev.jpcode.kits.config.KitsConfig;
-
-import org.jetbrains.annotations.Nullable;
 
 public class KitsModStorage {
     private final Logger logger;
@@ -70,6 +71,19 @@ public class KitsModStorage {
 
     public void init(RegistryWrapper.WrapperLookup registries) {
         this.registries = registries;
+    }
+
+    public Stream<KitRecord> getNonRingKitRecords(Predicate<String> filter) {
+        return KIT_MAP.keySet()
+            .stream()
+            .filter(filter)
+            .map(ALL_KITS_MAP::get);
+    }
+
+    public Stream<KitRecord> getKitRecords(Predicate<String> filter) {
+        return ALL_KITS_MAP.values()
+            .stream()
+            .filter(ent -> filter.test(ent.permissionName()));
     }
 
     public Optional<KitRecord> getKitRecord(String kitName) {
@@ -196,7 +210,7 @@ public class KitsModStorage {
                         NbtCompound kitRingNbt = NbtIo.read(kitFile.toPath());
                         String fileName = kitFile.getName();
                         String ringName = fileName.substring(0, fileName.length() - ".ring.nbt".length());
-                        var kitRing = KitRing.fromNbt(kitRingNbt, registries);
+                        var kitRing = KitRing.fromNbt(ringName, kitRingNbt, registries);
                         KIT_RING_MAP.put(ringName, kitRing);
                         kitRing.kits().forEach((k, kit) -> {
                             if (ALL_KITS_MAP.containsKey(k)) {
@@ -217,7 +231,7 @@ public class KitsModStorage {
                     NbtCompound kitNbt = NbtIo.read(kitFile.toPath());
                     String fileName = kitFile.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
-                    var kit = Kit.fromNbt(kitNbt, server.getRegistryManager());
+                    var kit = Kit.fromNbt(kitName, kitNbt, registries);
                     KIT_MAP.put(kitName, kit);
 
                     if (ALL_KITS_MAP.containsKey(kitName)) {

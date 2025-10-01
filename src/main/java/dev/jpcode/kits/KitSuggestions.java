@@ -11,7 +11,6 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Util;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
@@ -27,7 +26,8 @@ public final class KitSuggestions {
 
     public Stream<Map.Entry<String, Kit>> getAllKitsForPlayer(ServerPlayerEntity player) {
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        return Stream.concat(
+        return storage.getKitRecords(k -> playerData.canSeeKit(k))
+            Stream.concat(
             getAllNonRingKitsForPlayer(player),
             getAllKitRingsForPlayer(player)
                 .flatMap(ring -> {
@@ -94,14 +94,6 @@ public final class KitSuggestions {
                 .map(Map.Entry::getKey)
                 .toList()
         );
-    }
-
-    public Stream<Map.Entry<String, Kit>> getClaimableKitsForPlayer(ServerPlayerEntity player) {
-        var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        long currentTime = Util.getEpochTimeMs();
-
-        return getAllKitsForPlayer(player)
-            .filter(entry -> playerData.isKitOnCooldownAtTime(entry, currentTime));
     }
 
     /**
