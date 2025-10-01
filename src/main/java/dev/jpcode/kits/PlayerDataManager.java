@@ -46,11 +46,14 @@ public class PlayerDataManager {
             Kit starterKit = KitsMod.getStarterKit();
             if (starterKit != null) {
                 KitUtil.giveKit(player, starterKit);
-                if (!starterKit.commands().isEmpty())
+                if (!starterKit.commands().isEmpty()) {
                     KitUtil.runCommands(player, starterKit.commands());
+                }
                 playerData.setHasReceivedStarterKit(true);
-                if (KitsMod.CONFIG.starterKitSetCooldown.getValue())
-                    playerData.useKit(KitsMod.CONFIG.starterKit.getValue());
+                if (KitsMod.CONFIG.starterKitSetCooldown.getValue()) {
+                    var starterKitName = KitsMod.CONFIG.starterKit.getValue();
+                    playerData.useKit(starterKitName, starterKitName);
+                }
             }
         }
     }
