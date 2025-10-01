@@ -285,4 +285,31 @@ publisher {
     }
 }
 
+tasks.named('publishCurseforge').configure {
+    doFirst {
+        def key = getenv('CURSEFORGE')
+        if (key == 'NOT FOUND' || key.isEmpty()) {
+            throw new GradleException("CURSEFORGE API key is required for publishing to CurseForge")
+        }
+    }
+}
+
+tasks.named('publishModrinth').configure {
+    doFirst {
+        def key = getenv('MODRINTH')
+        if (key == 'NOT FOUND' || key.isEmpty()) {
+            throw new GradleException("MODRINTH API key is required for publishing to Modrinth")
+        }
+    }
+}
+
+tasks.named('publishGitHub').configure {
+    doFirst {
+        def key = getenv('GITHUB')
+        if (key == 'NOT FOUND' || key.isEmpty()) {
+            throw new GradleException("GITHUB API key is required for publishing to GitHub")
+        }
+    }
+}
+
 generatePomFileForMavenJavaPublication {}

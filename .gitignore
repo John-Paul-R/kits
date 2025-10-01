@@ -61,7 +61,6 @@ remappedSrc
 *.code-workspace
 
 # publish metadata
-changelog.md
 changelog.*.md
 
 # private / environment
