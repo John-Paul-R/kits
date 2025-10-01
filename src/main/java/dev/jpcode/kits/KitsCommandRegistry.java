@@ -17,7 +17,6 @@ import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.ItemStackArgumentType;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -63,11 +62,10 @@ public final class KitsCommandRegistry {
     }
 
     public static void saveKit(String kitName, Kit kit, World world) throws IOException {
-        NbtCompound root = new NbtCompound();
-        kit.writeNbt(root, world);
+        var nbt = kit.toNbt(world);
 
         NbtIo.write(
-            root,
+            nbt,
             KitsMod.getKitsDir().toPath().resolve(String.format("%s.nbt", kitName)).toFile().toPath()
         );
     }

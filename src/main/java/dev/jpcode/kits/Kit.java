@@ -7,11 +7,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
+import net.minecraft.storage.NbtReadView;
+import net.minecraft.storage.NbtWriteView;
+import net.minecraft.util.ErrorReporter;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.world.World;
 
 public class Kit {
@@ -75,21 +78,32 @@ public class Kit {
         public static final String COMMANDS = "commands";
     }
 
-    public void writeNbt(NbtCompound root, World world) {
-        root.putInt(StorageKey.SCHEMA_VERSION, 1);
-        root.put(StorageKey.INVENTORY, this.inventory().writeNbt(new NbtList(), world));
-        root.putLong(StorageKey.COOLDOWN, this.cooldownMs());
-        if (this.displayItem().isPresent()) {
-            root.putString(
-                StorageKey.DISPLAY_ITEM,
-                Registries.ITEM.getKey(this.displayItem().get()).get().getValue().toString());
-        }
-        if (!commands.isEmpty()) {
-            NbtList list = new NbtList();
-            for (String command : commands) {
-                list.add(NbtString.of(command));
+    public NbtCompound toNbt(World world) {
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
+        try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.writeNbt", logger)) {
+            var root = NbtWriteView.create(logging, world.getRegistryManager());
+
+            root.putInt(StorageKey.SCHEMA_VERSION, 1);
+
+            var inventoryListAppender = root.getListAppender(StorageKey.INVENTORY, ItemStack.CODEC);
+            this.inventory().writeNbt(inventoryListAppender);
+
+            root.putLong(StorageKey.COOLDOWN, this.cooldownMs());
+
+            if (this.displayItem().isPresent()) {
+                root.putString(
+                    StorageKey.DISPLAY_ITEM,
+                    Registries.ITEM.getKey(this.displayItem().get()).get().getValue().toString());
             }
-            root.put(StorageKey.COMMANDS, list);
+
+            if (!commands.isEmpty()) {
+                var list = root.getListAppender(StorageKey.COMMANDS, Codecs.NON_EMPTY_STRING);
+                for (String command : commands) {
+                    list.add(command);
+                }
+            }
+
+            return root.getNbt();
         }
     }
 
@@ -115,7 +129,15 @@ public class Kit {
         assert kitNbt != null;
         handleReadVersion(kitNbt);
 
-        kitInventory.readNbt(kitNbt.getList(StorageKey.INVENTORY).orElseThrow(), world);
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
+        try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.writeNbt", logger)) {
+            var nbt = NbtReadView.create(logging, world.getRegistryManager(), kitNbt);
+
+            var inventoryReadView = nbt.getListReadView(StorageKey.INVENTORY);
+            var inventoryTypedView = nbt.getTypedListView(StorageKey.INVENTORY, ItemStack.OPTIONAL_CODEC);
+            kitInventory.readNbt(inventoryReadView, inventoryTypedView);
+
+        }
         long cooldown = kitNbt.getLong(StorageKey.COOLDOWN).orElse(0L);
         var kitDisplayItem = kitNbt.getString(StorageKey.DISPLAY_ITEM)
             .map(Identifier::of)

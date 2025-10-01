@@ -1,23 +1,24 @@
-# Builds and tests the project
+# This workflow will build a Java project with Gradle
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
 
-name: Build
+name: Build and Test with Gradle
 
-# On pull requests
 on:
   push:
+    branches: [ "1.21.*" ]
     paths:
       - '**/src/**'
       - '**/build.gradle'
-      - '**/build-github-action.gradle'
       - '**/gradle.properties'
       - '**/settings.gradle'
       - .github/workflows/build.yml
       - LICENCE
+
   pull_request:
+    branches: [ "1.21.*" ]
     paths:
       - '**/src/**'
       - '**/build.gradle'
-      - '**/build-github-action.gradle'
       - '**/gradle.properties'
       - '**/settings.gradle'
       - .github/workflows/build.yml
@@ -25,7 +26,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Build and Test
 
     runs-on: ubuntu-latest
 
@@ -34,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🛂 Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v3
+        uses: gradle/actions/wrapper-validation@v4
 
       - name: 🏗 Set up JDK 21
         uses: actions/setup-java@v4
@@ -52,21 +53,50 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: 🔨 Build artifacts
+      - name: 📖 Extract current git hash for version suffix
+        id: version_suffix
+        run: |
+          CURRENT_COMMIT_HASH=$(git rev-parse --short HEAD)
+          echo "version_suffix=$CURRENT_COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "Version suffix will be: $CURRENT_COMMIT_HASH"
+
+      - name: 🔨 Build artifacts and Run Tests
+        env:
+          IS_PIPELINE: true
+          VERSION_SUFFIX: ${{ steps.version_suffix.outputs.version_suffix }}
         run: gradle clean build
+
+      - name: 🎯 Prepare mod-only artifact dir
+        run: |
+          mkdir -p upload-staging
+          find build/libs -name "*.jar" \
+            ! -name "*-sources.jar" \
+            ! -name "*-javadoc.jar" \
+            ! -name "*-test*.jar" \
+            -exec cp {} upload-staging/ \;
+
+      - name: 📦 Upload mod-only artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod_artifact
+          path: upload-staging/
+          # jars are already compressed
+          compression-level: 0
 
       - name: 📦 Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: artifacts
-          path: '**/build/libs/'
+          path: 'build/libs/'
+          # jars are already compressed
+          compression-level: 0
 
       - name: 📝 Upload reports
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: reports
-          path: '**/build/reports/'
+          path: 'build/reports/'
 
       - name: 🧨 Cleanup Gradle cache
         run: |

@@ -1,26 +1,26 @@
 package dev.jpcode.kits;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventories;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.StackWithSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.storage.ReadView;
+import net.minecraft.storage.WriteView;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.crash.CrashReportSection;
-import net.minecraft.world.World;
 
 public class KitInventory implements Inventory {
 
@@ -109,61 +109,25 @@ public class KitInventory implements Inventory {
 
     }
 
-    public NbtList writeNbt(NbtList nbtList, World world) {
-        for (int i = 0; i < this.main.size(); ++i) {
-            if (!this.main.get(i).isEmpty()) {
-                var nbtCompound = new NbtCompound();
-                nbtCompound.putByte("Slot", (byte)i);
-                nbtList.add(
-                    this.main.get(i).toNbt(world.getRegistryManager(), nbtCompound)
-                );
+    public void writeData(WriteView.ListAppender<StackWithSlot> list) {
+        for(int i = 0; i < this.main.size(); ++i) {
+            ItemStack itemStack = this.main.get(i);
+            if (!itemStack.isEmpty()) {
+                list.add(new StackWithSlot(i, itemStack));
             }
         }
-
-        for (int i = 0; i < this.armor.size(); ++i) {
-            if (!this.armor.get(i).isEmpty()) {
-                var nbtCompound = new NbtCompound();
-                nbtCompound.putByte("Slot", (byte)(i + 100));
-                nbtList.add(
-                    this.armor.get(i).toNbt(world.getRegistryManager(), nbtCompound)
-                );
-            }
-        }
-
-        for (int i = 0; i < this.offHand.size(); ++i) {
-            if (!this.offHand.get(i).isEmpty()) {
-                var nbtCompound = new NbtCompound();
-                nbtCompound.putByte("Slot", (byte)(i + 150));
-                nbtList.add(
-                    this.offHand.get(i).toNbt(world.getRegistryManager(), nbtCompound)
-                );
-            }
-        }
-
-        return nbtList;
     }
 
-    public void readNbt(NbtList nbtList, World world) {
-        this.main.clear();
-        this.armor.clear();
-        this.offHand.clear();
+    private record ItemSlot(int slot, @Nullable ItemStack stack) { }
 
-        for (int i = 0; i < nbtList.size(); ++i) {
-            NbtCompound nbtCompound = nbtList.getCompound(i).orElseThrow();
-            int j = nbtCompound.getByte("Slot").orElseThrow() & 255;
-            Optional<ItemStack> optionalItemStack = ItemStack.fromNbt(world.getRegistryManager(), nbtCompound);
-            if (optionalItemStack.isPresent()) {
-                ItemStack itemStack = optionalItemStack.get();
-                if (j >= 0 && j < this.main.size()) {
-                    this.main.set(j, itemStack);
-                } else if (j >= 100 && j < this.armor.size() + 100) {
-                    this.armor.set(j - 100, itemStack);
-                } else if (j >= 150 && j < this.offHand.size() + 150) {
-                    this.offHand.set(j - 150, itemStack);
-                }
+    public void readData(ReadView.TypedListReadView<StackWithSlot> list) {
+        this.main.clear();
+
+        for(StackWithSlot stackWithSlot : list) {
+            if (stackWithSlot.isValidSlot(this.main.size())) {
+                this.setStack(stackWithSlot.slot(), stackWithSlot.stack());
             }
         }
-
     }
 
     public int size() {
