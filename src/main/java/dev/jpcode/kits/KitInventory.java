@@ -79,11 +79,14 @@ public class KitInventory implements Inventory {
         return -1;
     }
 
+    public static boolean usableWhenFillingSlot(ItemStack stack) {
+        return !stack.isDamaged() && !stack.hasEnchantments() && !stack.contains(DataComponentTypes.CUSTOM_NAME);
+    }
+
     public int indexOf(ItemStack stack) {
         for (int i = 0; i < this.main.size(); ++i) {
             ItemStack itemStack = this.main.get(i);
-            if (!this.main.get(i).isEmpty() && ItemStack.areItemsAndComponentsEqual(stack, this.main.get(i)) && !this.main.get(i).isDamaged()
-                && !itemStack.hasEnchantments() && !itemStack.contains(DataComponentTypes.CUSTOM_NAME)) {
+            if (!itemStack.isEmpty() && ItemStack.areItemsAndComponentsEqual(stack, itemStack) && usableWhenFillingSlot(itemStack)) {
                 return i;
             }
         }
@@ -135,38 +138,25 @@ public class KitInventory implements Inventory {
     }
 
     public boolean isEmpty() {
-        var var1 = this.main.iterator();
-
-        ItemStack itemStack;
-        do {
-            if (!var1.hasNext()) {
-                var1 = this.armor.iterator();
-
-                do {
-                    if (!var1.hasNext()) {
-                        var1 = this.offHand.iterator();
-
-                        do {
-                            if (!var1.hasNext()) {
-                                return true;
-                            }
-
-                            itemStack = var1.next();
-                        } while (itemStack.isEmpty());
-
-                        return false;
-                    }
-
-                    itemStack = var1.next();
-                } while (itemStack.isEmpty());
-
+        for (ItemStack itemStack : this.main) {
+            if (!itemStack.isEmpty()) {
                 return false;
             }
+        }
 
-            itemStack = var1.next();
-        } while (itemStack.isEmpty());
+        for (ItemStack itemStack : this.armor) {
+            if (!itemStack.isEmpty()) {
+                return false;
+            }
+        }
 
-        return false;
+        for (ItemStack itemStack : this.offHand) {
+            if (!itemStack.isEmpty()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public ItemStack getStack(int slot) {
@@ -305,30 +295,24 @@ public class KitInventory implements Inventory {
         return this.addStack(slotIdx, stack);
     }
 
-    private int addStack(int slot, ItemStack incomingStack) {
-        ItemStack thisStack = this.getStack(slot);
-        if (thisStack.isEmpty()) {
-            thisStack = new ItemStack(incomingStack.getItem(), 0);
-            if (!incomingStack.getComponents().isEmpty()) {
-                thisStack.applyComponentsFrom(incomingStack.getComponents());
-            }
-
-            this.setStack(slot, thisStack);
+    private int addStack(int slot, ItemStack stack) {
+        int i = stack.getCount();
+        ItemStack itemStack = this.getStack(slot);
+        if (itemStack.isEmpty()) {
+            itemStack = stack.copyWithCount(0);
+            this.setStack(slot, itemStack);
         }
 
-        int incomingStackCount = incomingStack.getCount();
-        int thisStackAvailableCount = this.getMaxCount(thisStack) - thisStack.getCount();
-
-        int inventoryStackResultantCount = Math.min(incomingStackCount, thisStackAvailableCount);
-
-        if (inventoryStackResultantCount == 0) {
-            return incomingStackCount;
+        int j = this.getMaxCount(itemStack) - itemStack.getCount();
+        int k = Math.min(i, j);
+        if (k == 0) {
+            return i;
+        } else {
+            i -= k;
+            itemStack.increment(k);
+            itemStack.setBobbingAnimationTime(5);
+            return i;
         }
-
-        incomingStackCount -= inventoryStackResultantCount;
-        thisStack.increment(inventoryStackResultantCount);
-        thisStack.setBobbingAnimationTime(5);
-        return incomingStackCount;
     }
 
     public boolean insertStack(int slot, ItemStack stack) {
@@ -342,13 +326,12 @@ public class KitInventory implements Inventory {
                 }
 
                 if (slot >= 0) {
-                    this.main.set(slot, stack.copy());
-                    stack.setCount(0);
+                    this.main.set(slot, stack.copyAndEmpty());
+                    this.main.get(slot).setBobbingAnimationTime(5);
                     return true;
+                } else {
+                    return false;
                 }
-
-                return false;
-
             } else {
                 int i;
                 do {
@@ -367,9 +350,7 @@ public class KitInventory implements Inventory {
             CrashReportSection crashReportSection = crashReport.addElement("Item being added");
             crashReportSection.add("Item ID", Item.getRawId(stack.getItem()));
             crashReportSection.add("Item data", stack.getDamage());
-            crashReportSection.add("Item name", () -> {
-                return stack.getName().getString();
-            });
+            crashReportSection.add("Item name", () -> stack.getName().getString());
             throw new CrashException(crashReport);
         }
     }

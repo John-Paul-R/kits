@@ -6,8 +6,8 @@ import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.inventory.StackWithSlot;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.storage.NbtReadView;
@@ -85,8 +85,8 @@ public class Kit {
 
             root.putInt(StorageKey.SCHEMA_VERSION, 1);
 
-            var inventoryListAppender = root.getListAppender(StorageKey.INVENTORY, ItemStack.CODEC);
-            this.inventory().writeNbt(inventoryListAppender);
+            var inventoryListAppender = root.getListAppender(StorageKey.INVENTORY, StackWithSlot.CODEC);
+            this.inventory().writeData(inventoryListAppender);
 
             root.putLong(StorageKey.COOLDOWN, this.cooldownMs());
 
@@ -133,9 +133,8 @@ public class Kit {
         try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.writeNbt", logger)) {
             var nbt = NbtReadView.create(logging, world.getRegistryManager(), kitNbt);
 
-            var inventoryReadView = nbt.getListReadView(StorageKey.INVENTORY);
-            var inventoryTypedView = nbt.getTypedListView(StorageKey.INVENTORY, ItemStack.OPTIONAL_CODEC);
-            kitInventory.readNbt(inventoryReadView, inventoryTypedView);
+            var inventoryView = nbt.getTypedListView(StorageKey.INVENTORY, StackWithSlot.CODEC);
+            kitInventory.readData(inventoryView);
 
         }
         long cooldown = kitNbt.getLong(StorageKey.COOLDOWN).orElse(0L);
