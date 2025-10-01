@@ -48,7 +48,7 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
         Kit kit = kitRecord.kit();
         long currentTime = Util.getEpochTimeMs();
         Optional<Long> lastUsed = playerData.getKitUsedTime(kitRecord.permissionName());
-        long cooldown = kit.cooldownMs();
+        long cooldown = kitRecord.cooldownMs();
         long remainingTime = lastUsed.map(aLong -> (aLong + cooldown) - currentTime).orElse(0L);
 
         if (!KitPerms.checkKit(commandSource, kitRecord)) {
