@@ -27,19 +27,7 @@ public final class KitSuggestions {
     public Stream<KitsModStorage.KitRecord> getAllKitsForPlayer(ServerPlayerEntity player) {
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         return storage
-            .getKitRecords(k -> playerData.canSeeKit(k) && playerData.mayClaimFromRing(k.ringName(), k.kitName()))
-            ;
-//            Stream.concat(
-//            getAllNonRingKitsForPlayer(player),
-//            getAllKitRingsForPlayer(player)
-//                .flatMap(ring -> {
-//                    var ringName = ring.getKey();
-//                    return ring.getValue()
-//                        .kits()
-//                        .entrySet().stream()
-//                        .filter(kitEntry -> playerData.mayClaimFromRing(ringName, kitEntry.getKey()));
-//                })
-//        );
+            .getKitRecords(k -> playerData.canSeeKit(k) && playerData.mayClaimFromRing(k.ringName(), k.kitName()));
     }
 
     public Stream<KitsModStorage.KitRecord> getAllNonRingKitsForPlayer(ServerPlayerEntity player) {
