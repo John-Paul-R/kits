@@ -2,7 +2,9 @@ package dev.jpcode.kits;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -76,7 +78,7 @@ public class KitsMod implements ModInitializer {
 
     public static void reloadKits(MinecraftServer server) {
         KIT_MAP.clear();
-        kitsDir = server.getRunDirectory().getFileName().resolve("config/kits").toFile();
+        kitsDir = ensureKitsDir(server);
         userDataDir = server.getSavePath(WorldSavePath.ROOT).resolve("kits_user_data");
 
         // if the dir was not just created, load all kits from dir.
@@ -99,6 +101,46 @@ public class KitsMod implements ModInitializer {
             }
         }
         CONFIG.loadOrCreateProperties();
+    }
+
+    private static File ensureKitsDir(MinecraftServer server)
+    {
+        var buggedKitsDir = server.getRunDirectory().getFileName().resolve("config/kits").toFile();
+        var correctKitsDir = server.getRunDirectory().resolve("config/kits").toFile();
+        boolean buggedKitsDirExists = buggedKitsDir.exists();
+        boolean correctKitsDirExists = correctKitsDir.exists();
+        // Handle an old path resolution bug by keeping the bugged one if it exists
+        if (buggedKitsDirExists && correctKitsDirExists) {
+            LOGGER.warn(
+                "Due to an old bug in Kits, you have an extra kits folder at '{}'."
+                    + " Move those kits files to '{}' and remove the old folder to resolve this warning."
+                    + " Until the extra is removed, Kits will continue to use it ('{}').",
+                buggedKitsDir.toPath().toAbsolutePath(),
+                correctKitsDir.toPath().toAbsolutePath(),
+                buggedKitsDir.toPath().toAbsolutePath()
+            );
+            return buggedKitsDir;
+        }
+
+        // only the bugged dir exists; move it to the correct location
+        if (buggedKitsDirExists) {
+            try {
+                // ensure 'config' dir exists
+                Files.move(
+                    buggedKitsDir.toPath(),
+                    correctKitsDir.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.COPY_ATTRIBUTES
+                );
+                return correctKitsDir;
+            } catch (IOException ex) {
+                LOGGER.warn("failed to move old Kits dir to new Kits dir. Loading from old.", ex);
+                return buggedKitsDir;
+            }
+        }
+
+        // no special cases, just give em the correct dir!
+        return correctKitsDir;
     }
 
     public static Stream<Map.Entry<String, Kit>> getAllKitsForPlayer(ServerPlayerEntity player) {
