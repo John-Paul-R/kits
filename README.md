@@ -74,6 +74,12 @@ Requires Permission: `kits.manage`
 Command: `/kit resetPlayer <player>`\
 Requires Permission: `kits.manage`
 
+### Kit Rings
+
+Kits supports **Kit Rings** - collections of kits that share a common cooldown. When a player claims any kit from a ring, all kits in that ring go on cooldown together.
+
+For detailed information on Kit Rings, see [RINGS.md](docs/RINGS.md).
+
 ## Advanced
 
 **Kits** stores most of its data in `nbt` files, using Minecraft's NBT format.
