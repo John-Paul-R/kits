@@ -16,32 +16,41 @@ import dev.jpcode.kits.KitRing;
 public final class Codecs {
     private Codecs() {}
 
-    public static final Codec<KitRing> KIT_RING = RecordCodecBuilder.create(instance ->
+    /**
+     * Codec for ring metadata (stored in _ring.json).
+     * Kits field is optional - omitted when empty (for new directory format),
+     * included when present (for loading old .ring.json format during migration).
+     */
+    public static final Codec<KitRing> RING_METADATA = RecordCodecBuilder.create(instance ->
         instance.group(
             // Display name
             TextCodecs.CODEC
-                .optionalFieldOf("display_name")
+                .optionalFieldOf(KitRing.StorageKey.DISPLAY_NAME)
                 .forGetter(ring -> Optional.ofNullable(ring.displayName())),
 
             // Cooldown
             Codec.LONG
-                .fieldOf("cooldown")
+                .fieldOf(KitRing.StorageKey.COOLDOWN)
                 .forGetter(KitRing::cooldownMs),
 
             // Display item
             Registries.ITEM.getCodec()
-                .optionalFieldOf("display_item")
+                .optionalFieldOf(KitRing.StorageKey.DISPLAY_ITEM)
                 .forGetter(KitRing::displayItem),
 
-            // Kits map
+            // Kits map (optional, for loading old format)
             Codec.unboundedMap(Codec.STRING, Kit.CODEC)
-                .optionalFieldOf("kits", new HashMap<>())
-                .forGetter(KitRing::kits),
+                .xmap(HashMap::new, map -> map) // Ensure mutable HashMap
+                .optionalFieldOf(KitRing.StorageKey.KITS)
+                .forGetter(ring -> ring.kits().isEmpty()
+                    ? Optional.empty()
+                    : Optional.of(ring.kits())
+                ),
 
             // Commands list
             Codec.STRING.listOf()
                 .xmap(ArrayList::new, list -> list)
-                .optionalFieldOf("commands", new ArrayList<>())
+                .optionalFieldOf(KitRing.StorageKey.COMMANDS, new ArrayList<>())
                 .forGetter(KitRing::commands)
 
         ).apply(instance, KitRing::createWithData)

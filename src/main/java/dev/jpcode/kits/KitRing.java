@@ -1,7 +1,7 @@
 package dev.jpcode.kits;
 
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +23,7 @@ import dev.jpcode.kits.datafixer.KitRingDataFixer;
 public class KitRing {
     private Text displayName;
     private @Nullable Item displayItem;
-    private final Map<String, Kit> kits;
+    private final HashMap<String, Kit> kits;
     private final ArrayList<String> commands;
     /** a negative cooldown yields a one-time use kit ring */
     private final long cooldownMs;
@@ -32,7 +32,7 @@ public class KitRing {
         Text displayName,
         long cooldownMs,
         @Nullable Item displayItem,
-        Map<String, Kit> kits,
+        HashMap<String, Kit> kits,
         ArrayList<String> commands
     ) {
         this.displayName = displayName;
@@ -46,14 +46,14 @@ public class KitRing {
         Optional<Text> displayName,
         long cooldownMs,
         Optional<Item> displayItem,
-        Map<String, Kit> kits,
+        Optional<HashMap<String, Kit>> kits,
         ArrayList<String> commands
     ) {
         return new KitRing(
             displayName.orElse(null),
             cooldownMs,
             displayItem.orElse(null),
-            kits,
+            kits.orElseGet(HashMap::new),
             commands
         );
     }
@@ -79,7 +79,7 @@ public class KitRing {
     }
 
     /** return is mutable internal ref */
-    public Map<String, Kit> kits() {
+    public HashMap<String, Kit> kits() {
         return kits;
     }
 
@@ -109,13 +109,13 @@ public class KitRing {
     }
 
     // STORAGE
-    public static final Codec<KitRing> CODEC = dev.jpcode.kits.codec.Codecs.KIT_RING;
+    public static final Codec<KitRing> CODEC = dev.jpcode.kits.codec.Codecs.RING_METADATA;
 
     private static final DataFixer _kitRingDataFixer = KitRingDataFixer.createDataFixer().build().fixer();
     private static final String SCHEMA_VERSION_KEY = "_schema_version";
     private static final int SCHEMA_VERSION = 2;
 
-    private static final class StorageKey {
+    public static final class StorageKey {
         public static final String SCHEMA_VERSION = "_schema_version";
         public static final String COOLDOWN = "cooldown";
         public static final String DISPLAY_NAME = "display_name";
@@ -131,15 +131,7 @@ public class KitRing {
             .orElseThrow();
     }
 
-    public static class DataFixResult {
-        public final NbtCompound nbt;
-        public final boolean wasUpgraded;
-
-        public DataFixResult(NbtCompound nbt, boolean wasUpgraded) {
-            this.nbt = nbt;
-            this.wasUpgraded = wasUpgraded;
-        }
-    }
+    public record DataFixResult(NbtCompound nbt, boolean wasUpgraded) { }
 
     private static DataFixResult fixData(NbtCompound nbt) {
         // Apply datafixer to upgrade from schema 0/1 to schema 2

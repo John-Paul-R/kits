@@ -137,13 +137,26 @@ public class KitsModStorage {
 
         ring.addKit(kitName, kit);
 
-        saveKitRing(ringName, ring);
+        // Move the kit file into the ring directory
+        Path ringDir = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring");
+        Files.createDirectories(ringDir);
+
+        Path sourceKitPath = KitsMod.getKitsDir().toPath().resolve(kitName + ".json");
+        Path destKitPath = ringDir.resolve(kitName + ".json");
+
         try {
-            Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".json"));
-        } catch (NoSuchFileException ign) {}
-        try {
-            Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
-        } catch (NoSuchFileException ign) {}
+            // Try to move the existing kit file
+            Files.move(sourceKitPath, destKitPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (NoSuchFileException e) {
+            // If the .json file doesn't exist, save it fresh (also handles .nbt legacy case)
+            var kitJsonElement = Kit.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), kit).getOrThrow();
+            String kitJson = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(kitJsonElement);
+            Files.writeString(destKitPath, kitJson);
+            // Clean up old NBT file if it exists
+            try {
+                Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
+            } catch (NoSuchFileException ign) {}
+        }
     }
 
     public void removeKitFromRing(String ringName, String kitName)
@@ -161,8 +174,20 @@ public class KitsModStorage {
 
         KIT_MAP.put(kitName, removed);
 
+        // Remove kit file from ring directory
+        Path ringDir = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring");
+        Path kitInRingPath = ringDir.resolve(kitName + ".json");
+        try {
+            Files.deleteIfExists(kitInRingPath);
+        } catch (IOException e) {
+            logger.warn("Failed to delete kit file '{}' from ring directory", kitInRingPath, e);
+        }
+
+        // Save the removed kit as a standalone kit
         saveKit(kitName, removed);
-        saveKitRing(ringName, ring);
+
+        // No need to save ring metadata - we only modified the kits map in memory
+        // The kit file is already deleted from the ring directory
     }
 
     @NotNull KitRing getKitRingOrThrow(String ringName)
@@ -218,10 +243,58 @@ public class KitsModStorage {
                     String.format("Failed to list files in the kits directory ('%s')", kitsDir.getPath()));
             }
             for (File kitFile : kitFiles) {
-                // Try JSON first, fall back to NBT for backwards compatibility
+                // Check for ring directories (ringname.ring/)
+                if (kitFile.isDirectory() && kitFile.getName().endsWith(".ring")) {
+                    try {
+                        String ringName = kitFile.getName().substring(0, kitFile.getName().length() - ".ring".length());
+                        logger.info("Loading kit ring directory '{}'", kitFile.getName());
+
+                        // Load ring metadata from _ring.json
+                        Path metadataPath = kitFile.toPath().resolve("_ring.json");
+                        if (!Files.exists(metadataPath)) {
+                            logger.error("Ring directory '{}' missing _ring.json metadata file", kitFile.getName());
+                            continue;
+                        }
+
+                        String metadataJson = Files.readString(metadataPath);
+                        var metadataElement = JsonParser.parseString(metadataJson);
+                        var kitRing = KitRing.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), metadataElement).getOrThrow();
+
+                        // Load all kit files from the ring directory
+                        File[] ringKitFiles = kitFile.listFiles((dir, name) -> name.endsWith(".json") && !name.equals("_ring.json"));
+                        if (ringKitFiles != null) {
+                            for (File ringKitFile : ringKitFiles) {
+                                String kitName = ringKitFile.getName().substring(0, ringKitFile.getName().length() - ".json".length());
+                                String kitJson = Files.readString(ringKitFile.toPath());
+                                var kitJsonElement = JsonParser.parseString(kitJson);
+                                var kit = Kit.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), kitJsonElement).getOrThrow();
+
+                                kit.setCooldownTrackerKey(ringName);
+                                kit.setCooldownMs(kitRing.cooldownMs());
+                                kitRing.addKit(kitName, kit);
+                            }
+                        }
+
+                        KIT_RING_MAP.put(ringName, kitRing);
+                        kitRing.kits().forEach((k, kit) -> {
+                            if (ALL_KITS_MAP.containsKey(k)) {
+                                logger.warn("Overwriting existing kit '{}' with kit '{}' from kit ring '{}' (this means you have more than one kit with the same name)",
+                                    k, k, ringName
+                                );
+                            }
+                            ALL_KITS_MAP.put(k, KitRecord.ringKit(ringName, kitRing, k, kit));
+                        });
+                    } catch (IOException | IllegalStateException | NullPointerException e) {
+                        logger.error("Error while loading kit ring '{}'", kitFile.getPath());
+                        e.printStackTrace();
+                    }
+                    continue;
+                }
+
+                // Legacy: Load old .ring.json format (migrate to directory structure)
                 if (kitFile.getPath().endsWith(".ring.json")) {
                     try {
-                        logger.info("Loading kit ring '{}'", kitFile.getName());
+                        logger.info("Loading legacy kit ring file '{}' (will migrate to directory format)", kitFile.getName());
                         String json = Files.readString(kitFile.toPath());
                         var jsonElement = JsonParser.parseString(json);
                         String fileName = kitFile.getName();
@@ -243,6 +316,18 @@ public class KitsModStorage {
                             }
                             ALL_KITS_MAP.put(k, KitRecord.ringKit(ringName, kitRing, k, kit));
                         });
+
+                        // Migrate to new directory format on IO thread
+                        final String finalRingName = ringName;
+                        final KitRing finalRing = kitRing;
+                        net.minecraft.util.Util.getIoWorkerExecutor().execute(() -> {
+                            try {
+                                logger.info("Migrating kit ring '{}' to directory format", finalRingName);
+                                saveKitRing(finalRingName, finalRing);
+                            } catch (IOException e) {
+                                logger.error("Failed to migrate kit ring '{}' to directory format", finalRingName, e);
+                            }
+                        });
                     } catch (IOException | IllegalStateException | NullPointerException e) {
                         logger.error("Error while loading kit ring '{}'", kitFile.getPath());
                         e.printStackTrace();
@@ -253,28 +338,26 @@ public class KitsModStorage {
                 // Legacy NBT support for kit rings
                 if (kitFile.getPath().endsWith(".ring.nbt")) {
                     try {
-                        logger.info("Loading kit ring '{}' (legacy NBT format)", kitFile.getName());
+                        logger.info("Loading legacy kit ring NBT file '{}' (will migrate to directory format)", kitFile.getName());
                         NbtCompound kitRingNbt = NbtIo.read(kitFile.toPath());
                         String fileName = kitFile.getName();
                         String ringName = fileName.substring(0, fileName.length() - ".ring.nbt".length());
 
-                        // Parse and check if upgrade occurred
+                        // Parse and migrate to directory format
                         var loadResult = KitRing.fromNbtWithResult(ringName, kitRingNbt, registries);
                         KitRing kitRing = loadResult.ring();
 
-                        // Queue migration to JSON on IO thread if upgraded
-                        if (loadResult.wasUpgraded()) {
-                            final String finalRingName = ringName;
-                            final KitRing finalRing = kitRing;
-                            net.minecraft.util.Util.getIoWorkerExecutor().execute(() -> {
-                                try {
-                                    logger.info("Migrating upgraded kit ring '{}' to JSON format", finalRingName);
-                                    saveKitRing(finalRingName, finalRing);
-                                } catch (IOException e) {
-                                    logger.error("Failed to migrate kit ring '{}' to JSON", finalRingName, e);
-                                }
-                            });
-                        }
+                        // Always migrate NBT format to new directory structure
+                        final String finalRingName = ringName;
+                        final KitRing finalRing = kitRing;
+                        net.minecraft.util.Util.getIoWorkerExecutor().execute(() -> {
+                            try {
+                                logger.info("Migrating kit ring '{}' to directory format", finalRingName);
+                                saveKitRing(finalRingName, finalRing);
+                            } catch (IOException e) {
+                                logger.error("Failed to migrate kit ring '{}' to directory format", finalRingName, e);
+                            }
+                        });
 
                         KIT_RING_MAP.put(ringName, kitRing);
                         kitRing.kits().forEach((k, kit) -> {
@@ -416,19 +499,43 @@ public class KitsModStorage {
         }
     }
 
-    public void saveKitRing(String kitName, KitRing ring) throws IOException {
+    public void saveKitRingMetadata(String ringName, KitRing ring) throws IOException {
+        // Create ring directory if it doesn't exist
+        Path ringDir = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring");
+        Files.createDirectories(ringDir);
+
+        // Save ring metadata to _ring.json (kits field omitted when empty)
         var jsonElement = KitRing.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), ring).getOrThrow();
         String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(jsonElement);
+        Path metadataPath = ringDir.resolve("_ring.json");
+        Files.writeString(metadataPath, json);
+    }
 
-        Path ringPath = KitsMod.getKitsDir().toPath().resolve(String.format("%s.ring.json", kitName));
-        Files.writeString(ringPath, json);
+    public void saveKitRing(String ringName, KitRing ring) throws IOException {
+        // Save metadata first
+        saveKitRingMetadata(ringName, ring);
 
-        // Remove old NBT file if it exists
-        Path oldNbtPath = KitsMod.getKitsDir().toPath().resolve(String.format("%s.ring.nbt", kitName));
+        Path ringDir = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring");
+
+        // Save each kit as a separate file in the ring directory
+        for (Map.Entry<String, Kit> entry : ring.kits().entrySet()) {
+            String kitName = entry.getKey();
+            Kit kit = entry.getValue();
+
+            var kitJsonElement = Kit.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), kit).getOrThrow();
+            String kitJson = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(kitJsonElement);
+            Path kitPath = ringDir.resolve(kitName + ".json");
+            Files.writeString(kitPath, kitJson);
+        }
+
+        // Clean up old formats if they exist
+        Path oldRingJsonPath = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring.json");
+        Path oldRingNbtPath = KitsMod.getKitsDir().toPath().resolve(ringName + ".ring.nbt");
         try {
-            Files.deleteIfExists(oldNbtPath);
+            Files.deleteIfExists(oldRingJsonPath);
+            Files.deleteIfExists(oldRingNbtPath);
         } catch (IOException e) {
-            logger.warn("Failed to delete old NBT file for kit ring '{}'", kitName, e);
+            logger.warn("Failed to delete old ring file for '{}'", ringName, e);
         }
     }
 }

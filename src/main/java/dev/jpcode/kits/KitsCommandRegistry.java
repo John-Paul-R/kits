@@ -6,9 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import me.lucko.fabric.api.permissions.v0.Permissions;
-
-import net.minecraft.world.World;
-
 import org.apache.logging.log4j.Logger;
 
 import com.mojang.brigadier.CommandDispatcher;
@@ -22,7 +19,6 @@ import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.ItemStackArgumentType;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
@@ -346,9 +342,9 @@ public final class KitsCommandRegistry {
                         var existingRing = storage.KIT_RING_MAP.get(ringName);
                         existingRing.setDisplayItem(item.getItem());
                         try {
-                            storage.saveKitRing(ringName, existingRing);
+                            storage.saveKitRingMetadata(ringName, existingRing);
                         } catch (IOException e) {
-                            throw new KitCommandSyntaxException(Text.literal("Failed to save kit ring."));
+                            throw new KitCommandSyntaxException(Text.literal("Failed to save kit ring metadata."));
                         }
                         return 0;
                     })

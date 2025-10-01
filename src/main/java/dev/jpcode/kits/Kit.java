@@ -188,15 +188,7 @@ public class Kit {
             .orElseThrow();
     }
 
-    public static class DataFixResult {
-        public final NbtCompound nbt;
-        public final boolean wasUpgraded;
-
-        public DataFixResult(NbtCompound nbt, boolean wasUpgraded) {
-            this.nbt = nbt;
-            this.wasUpgraded = wasUpgraded;
-        }
-    }
+    public record DataFixResult(NbtCompound nbt, boolean wasUpgraded) { }
 
     private static DataFixResult fixData(NbtCompound nbt) {
         // Apply datafixer to upgrade from schema 0/1 to schema 2
