@@ -62,23 +62,25 @@ jobs:
           echo "Extracted minecraft version: $MC_VERSION"
           echo "Tag will be: $TAG"
 
-      - name: ❌ Check if tag already exists
-        if: inputs.abort_on_tag_conflict
-        run: |
-          if git ls-remote --tags origin | grep -q "refs/tags/${{ steps.version.outputs.tag }}$"; then
-            echo "❌ Tag ${{ steps.version.outputs.tag }} already exists!"
-            echo "Please update the mod_version in gradle.properties to create a new release."
-            exit 1
-          fi
-          echo "✅ Tag ${{ steps.version.outputs.tag }} does not exist, proceeding..."
-
       - name: 🏷️ Create and push tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.version.outputs.tag }}
-          git push origin ${{ steps.version.outputs.tag }}
-          echo "✅ Created and pushed tag: ${{ steps.version.outputs.tag }}"
+
+          # Check if tag already exists remotely
+          if git ls-remote --tags origin | grep -q "refs/tags/${{ steps.version.outputs.tag }}$"; then
+            if [ "${{ inputs.abort_on_tag_conflict }}" = "true" ]; then
+              echo "❌ Tag ${{ steps.version.outputs.tag }} already exists!"
+              echo "Please update the mod_version in gradle.properties to create a new release."
+              exit 1
+            else
+              echo "⚠️ Tag ${{ steps.version.outputs.tag }} already exists, skipping tag creation"
+            fi
+          else
+            git tag ${{ steps.version.outputs.tag }}
+            git push origin ${{ steps.version.outputs.tag }}
+            echo "✅ Created and pushed tag: ${{ steps.version.outputs.tag }}"
+          fi
 
       - name: 🛂 Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
