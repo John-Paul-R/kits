@@ -1,23 +1,27 @@
 package dev.jpcode.kits;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-import net.minecraft.registry.RegistryWrapper;
-
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.mojang.datafixers.DataFixer;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.Dynamic;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import net.minecraft.inventory.StackWithSlot;
 import net.minecraft.item.Item;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.registry.Registries;
-import net.minecraft.storage.NbtReadView;
-import net.minecraft.storage.NbtWriteView;
+import net.minecraft.registry.RegistryOps;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.util.ErrorReporter;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.dynamic.Codecs;
-import net.minecraft.world.World;
+
+import dev.jpcode.kits.datafixer.KitDataFixer;
 
 public class Kit {
 
@@ -47,6 +51,21 @@ public class Kit {
         this.displayItem = displayItem;
         this.commands = commands;
         this.cooldownTrackerKey = cooldownTrackerKey;
+    }
+
+    // CODEC constructor
+    private Kit(
+        List<StackWithSlot> inventoryData,
+        long cooldownMs,
+        Optional<Item> displayItem,
+        List<String> commands
+    ) {
+        this.inventory = new KitInventory();
+        // Will be populated by codec deserialization
+        this.cooldownMs = cooldownMs;
+        this.displayItem = displayItem.orElse(null);
+        this.commands = new ArrayList<>(commands);
+        this.cooldownTrackerKey = null; // Must be set by factory
     }
 
     public KitInventory inventory() {
@@ -85,6 +104,75 @@ public class Kit {
         return true;
     }
 
+    public static Kit createWithData(
+        long cooldownMs,
+        Optional<Item> displayItem,
+        List<StackWithSlot> inventoryData,
+        List<String> commands
+    ) {
+        Kit kit = new Kit(inventoryData, cooldownMs, displayItem, commands);
+
+        // Populate inventory from codec data
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
+        try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.createWithData", logger)) {
+            for (StackWithSlot stackWithSlot : inventoryData) {
+                if (stackWithSlot.isValidSlot(kit.inventory.main.size())) {
+                    kit.inventory.setStack(stackWithSlot.slot(), stackWithSlot.stack());
+                }
+            }
+        }
+
+        return kit;
+    }
+
+    public void setCooldownTrackerKey(String cooldownTrackerKey) {
+        this.cooldownTrackerKey = cooldownTrackerKey;
+    }
+
+    public List<StackWithSlot> getInventoryData() {
+        ArrayList<StackWithSlot> list = new ArrayList<>();
+        for (int i = 0; i < this.inventory.main.size(); ++i) {
+            net.minecraft.item.ItemStack itemStack = this.inventory.main.get(i);
+            if (!itemStack.isEmpty()) {
+                list.add(new StackWithSlot(i, itemStack));
+            }
+        }
+        return list;
+    }
+
+    public static final Codec<Kit> CODEC = RecordCodecBuilder.create(instance ->
+        instance.group(
+            // Cooldown
+            Codec.LONG
+                .optionalFieldOf(StorageKey.COOLDOWN, 0L)
+                .forGetter(Kit::cooldownMs),
+
+            // Display item
+            Registries.ITEM.getCodec()
+                .optionalFieldOf(StorageKey.DISPLAY_ITEM)
+                .forGetter(Kit::displayItem),
+
+            // Inventory
+            StackWithSlot.CODEC.listOf()
+                .optionalFieldOf(StorageKey.INVENTORY, List.of())
+                .forGetter(Kit::getInventoryData),
+
+            // Commands
+            Codec.STRING.listOf()
+                .optionalFieldOf(StorageKey.COMMANDS, List.of())
+                .forGetter(Kit::commands)
+
+        ).apply(instance, Kit::createWithData)
+    );
+
+    public String getCooldownTrackerKey() {
+        return this.cooldownTrackerKey;
+    }
+
+    private static final DataFixer _kitDataFixer = KitDataFixer.createDataFixer().build().fixer();
+    private static final String SCHEMA_VERSION_KEY = "_schema_version";
+    private static final int SCHEMA_VERSION = 2;
+
     private static final class StorageKey {
         public static final String SCHEMA_VERSION = "_schema_version";
         public static final String INVENTORY = "inventory";
@@ -94,48 +182,61 @@ public class Kit {
     }
 
     public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {
-        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
-        try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.writeNbt", logger)) {
-            var root = NbtWriteView.create(logging, registries);
+        return CODEC.encodeStart(NbtOps.INSTANCE, this)
+            .getOrThrow()
+            .asCompound()
+            .orElseThrow();
+    }
 
-            root.putInt(StorageKey.SCHEMA_VERSION, 1);
+    public static class DataFixResult {
+        public final NbtCompound nbt;
+        public final boolean wasUpgraded;
 
-            var inventoryListAppender = root.getListAppender(StorageKey.INVENTORY, StackWithSlot.CODEC);
-            this.inventory().writeData(inventoryListAppender);
-
-            root.putLong(StorageKey.COOLDOWN, this.cooldownMs());
-
-            if (this.displayItem().isPresent()) {
-                root.putString(
-                    StorageKey.DISPLAY_ITEM,
-                    Registries.ITEM.getKey(this.displayItem().get()).get().getValue().toString());
-            }
-
-            if (!commands.isEmpty()) {
-                var list = root.getListAppender(StorageKey.COMMANDS, Codecs.NON_EMPTY_STRING);
-                for (String command : commands) {
-                    list.add(command);
-                }
-            }
-
-            return root.getNbt();
+        public DataFixResult(NbtCompound nbt, boolean wasUpgraded) {
+            this.nbt = nbt;
+            this.wasUpgraded = wasUpgraded;
         }
     }
 
-    private static void handleReadVersion(@NotNull NbtCompound kitNbt) {
+    private static DataFixResult fixData(NbtCompound nbt) {
+        // Apply datafixer to upgrade from schema 0/1 to schema 2
+        int currentVersion = nbt.getInt(SCHEMA_VERSION_KEY, 0);
+        boolean wasUpgraded = currentVersion < SCHEMA_VERSION;
 
-        if (!kitNbt.contains(StorageKey.SCHEMA_VERSION)) {
-            // Upgrade version nil to v1
-            // Negative cooldowns replaced with 0, since that was the old behavior
-            var cd = kitNbt.getLong(StorageKey.COOLDOWN).orElse(0L);
+        // Handle legacy negative cooldown fix
+        if (currentVersion == 0) {
+            var cd = nbt.getLong(StorageKey.COOLDOWN).orElse(0L);
             if (cd < 0) {
-                kitNbt.putLong(StorageKey.COOLDOWN, 0);
+                nbt.putLong(StorageKey.COOLDOWN, 0);
             }
-
-            return;
         }
-        var version = kitNbt.getInt(StorageKey.SCHEMA_VERSION);
-        // other version handling...
+
+        nbt = _kitDataFixer.update(
+            KitDataFixer.TYPE,
+            new Dynamic<NbtElement>(NbtOps.INSTANCE, nbt),
+            currentVersion,
+            SCHEMA_VERSION
+        ).getValue().asCompound().orElseThrow();
+
+        return new DataFixResult(nbt, wasUpgraded);
+    }
+
+    public record LoadResult(Kit kit, boolean wasUpgraded) {}
+
+    public static LoadResult fromNbtWithResult(
+        String cooldownTrackerKey,
+        NbtCompound kitNbt,
+        RegistryWrapper.WrapperLookup registries
+    ) {
+        assert kitNbt != null;
+        var fixResult = fixData(kitNbt);
+
+        Kit kit = CODEC.parse(RegistryOps.of(NbtOps.INSTANCE, registries), fixResult.nbt)
+            .getOrThrow();
+
+        kit.setCooldownTrackerKey(cooldownTrackerKey);
+
+        return new LoadResult(kit, fixResult.wasUpgraded);
     }
 
     public static Kit fromNbt(
@@ -143,29 +244,6 @@ public class Kit {
         NbtCompound kitNbt,
         RegistryWrapper.WrapperLookup registries
     ) {
-        var kitInventory = new KitInventory();
-
-        assert kitNbt != null;
-        handleReadVersion(kitNbt);
-
-        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
-        try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.writeNbt", logger)) {
-            var nbt = NbtReadView.create(logging, registries, kitNbt);
-
-            var inventoryView = nbt.getTypedListView(StorageKey.INVENTORY, StackWithSlot.CODEC);
-            kitInventory.readData(inventoryView);
-
-        }
-        long cooldown = kitNbt.getLong(StorageKey.COOLDOWN).orElse(0L);
-        var kitDisplayItem = kitNbt.getString(StorageKey.DISPLAY_ITEM)
-            .map(Identifier::of)
-            .map(Registries.ITEM::get)
-            .orElse(null);
-
-        ArrayList<String> commands = kitNbt.getList(StorageKey.COMMANDS)
-            .map(l -> new ArrayList<>(kitNbt.getList(StorageKey.COMMANDS).orElseThrow().stream().map(e -> e.asString().orElseThrow()).toList()))
-            .orElseGet(ArrayList::new);
-
-        return new Kit(kitInventory, cooldown, kitDisplayItem, commands, cooldownTrackerKey);
+        return fromNbtWithResult(cooldownTrackerKey, kitNbt, registries).kit();
     }
 }

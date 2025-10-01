@@ -12,13 +12,17 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import com.google.gson.JsonParser;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import com.mojang.serialization.JsonOps;
+
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtCrashException;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.registry.RegistryOps;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
@@ -60,12 +64,19 @@ public class KitsModStorage {
             return new KitRecord(ringName, ring, kitName, kit);
         }
 
+        /**
+         * used as the permission key for permissions mods and as the kitCooldownKey
+         */
         public String permissionName() {
             return ringName == null ? kitName : ringName;
         }
 
         public long cooldownMs() {
             return ring == null ? kit.cooldownMs() : ring.cooldownMs();
+        }
+
+        public String cooldownKey() {
+            return permissionName();
         }
     }
 
@@ -80,10 +91,10 @@ public class KitsModStorage {
             .map(ALL_KITS_MAP::get);
     }
 
-    public Stream<KitRecord> getKitRecords(Predicate<String> filter) {
+    public Stream<KitRecord> getKitRecords(Predicate<KitRecord> filter) {
         return ALL_KITS_MAP.values()
             .stream()
-            .filter(ent -> filter.test(ent.permissionName()));
+            .filter(filter);
     }
 
     public Optional<KitRecord> getKitRecord(String kitName) {
@@ -127,6 +138,9 @@ public class KitsModStorage {
         ring.addKit(kitName, kit);
 
         saveKitRing(ringName, ring);
+        try {
+            Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".json"));
+        } catch (NoSuchFileException ign) {}
         try {
             Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
         } catch (NoSuchFileException ign) {}
@@ -204,13 +218,22 @@ public class KitsModStorage {
                     String.format("Failed to list files in the kits directory ('%s')", kitsDir.getPath()));
             }
             for (File kitFile : kitFiles) {
-                if (kitFile.getPath().endsWith(".ring.nbt")) {
+                // Try JSON first, fall back to NBT for backwards compatibility
+                if (kitFile.getPath().endsWith(".ring.json")) {
                     try {
                         logger.info("Loading kit ring '{}'", kitFile.getName());
-                        NbtCompound kitRingNbt = NbtIo.read(kitFile.toPath());
+                        String json = Files.readString(kitFile.toPath());
+                        var jsonElement = JsonParser.parseString(json);
                         String fileName = kitFile.getName();
-                        String ringName = fileName.substring(0, fileName.length() - ".ring.nbt".length());
-                        var kitRing = KitRing.fromNbt(ringName, kitRingNbt, registries);
+                        String ringName = fileName.substring(0, fileName.length() - ".ring.json".length());
+                        var kitRing = KitRing.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), jsonElement).getOrThrow();
+
+                        // Set cooldown tracker keys for all kits
+                        kitRing.kits().forEach((k, kit) -> {
+                            kit.setCooldownTrackerKey(ringName);
+                            kit.setCooldownMs(kitRing.cooldownMs());
+                        });
+
                         KIT_RING_MAP.put(ringName, kitRing);
                         kitRing.kits().forEach((k, kit) -> {
                             if (ALL_KITS_MAP.containsKey(k)) {
@@ -220,29 +243,118 @@ public class KitsModStorage {
                             }
                             ALL_KITS_MAP.put(k, KitRecord.ringKit(ringName, kitRing, k, kit));
                         });
-                    } catch (IOException | NullPointerException | NbtCrashException e) {
+                    } catch (IOException | IllegalStateException | NullPointerException e) {
                         logger.error("Error while loading kit ring '{}'", kitFile.getPath());
                         e.printStackTrace();
                     }
                     continue;
                 }
-                try {
-                    logger.info("Loading kit '{}'", kitFile.getName());
-                    NbtCompound kitNbt = NbtIo.read(kitFile.toPath());
-                    String fileName = kitFile.getName();
-                    String kitName = fileName.substring(0, fileName.length() - 4);
-                    var kit = Kit.fromNbt(kitName, kitNbt, registries);
-                    KIT_MAP.put(kitName, kit);
 
-                    if (ALL_KITS_MAP.containsKey(kitName)) {
-                        logger.warn("Overwriting existing kit '{}' with kit '{}' (this means you have more than one kit with the same name)",
-                            kitName, kitName
-                        );
+                // Legacy NBT support for kit rings
+                if (kitFile.getPath().endsWith(".ring.nbt")) {
+                    try {
+                        logger.info("Loading kit ring '{}' (legacy NBT format)", kitFile.getName());
+                        NbtCompound kitRingNbt = NbtIo.read(kitFile.toPath());
+                        String fileName = kitFile.getName();
+                        String ringName = fileName.substring(0, fileName.length() - ".ring.nbt".length());
+
+                        // Parse and check if upgrade occurred
+                        var loadResult = KitRing.fromNbtWithResult(ringName, kitRingNbt, registries);
+                        KitRing kitRing = loadResult.ring();
+
+                        // Queue migration to JSON on IO thread if upgraded
+                        if (loadResult.wasUpgraded()) {
+                            final String finalRingName = ringName;
+                            final KitRing finalRing = kitRing;
+                            net.minecraft.util.Util.getIoWorkerExecutor().execute(() -> {
+                                try {
+                                    logger.info("Migrating upgraded kit ring '{}' to JSON format", finalRingName);
+                                    saveKitRing(finalRingName, finalRing);
+                                } catch (IOException e) {
+                                    logger.error("Failed to migrate kit ring '{}' to JSON", finalRingName, e);
+                                }
+                            });
+                        }
+
+                        KIT_RING_MAP.put(ringName, kitRing);
+                        kitRing.kits().forEach((k, kit) -> {
+                            if (ALL_KITS_MAP.containsKey(k)) {
+                                logger.warn("Overwriting existing kit '{}' with kit '{}' from kit ring '{}' (this means you have more than one kit with the same name)",
+                                    k, k, ringName
+                                );
+                            }
+                            ALL_KITS_MAP.put(k, KitRecord.ringKit(ringName, kitRing, k, kit));
+                        });
+                    } catch (IOException | IllegalStateException |NullPointerException | NbtCrashException e) {
+                        logger.error("Error while loading kit ring '{}'", kitFile.getPath());
+                        e.printStackTrace();
                     }
-                    ALL_KITS_MAP.put(kitName, KitRecord.standaloneKit(kitName, kit));
-                } catch (IOException | NullPointerException | NbtCrashException e) {
-                    logger.error("Error while loading kit '{}'", kitFile.getPath());
-                    e.printStackTrace();
+                    continue;
+                }
+
+                // Try JSON kit first
+                if (kitFile.getPath().endsWith(".json")) {
+                    try {
+                        logger.info("Loading kit '{}'", kitFile.getName());
+                        String json = Files.readString(kitFile.toPath());
+                        var jsonElement = JsonParser.parseString(json);
+                        String fileName = kitFile.getName();
+                        String kitName = fileName.substring(0, fileName.length() - ".json".length());
+                        var kit = Kit.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), jsonElement).getOrThrow();
+                        kit.setCooldownTrackerKey(kitName);
+                        KIT_MAP.put(kitName, kit);
+
+                        if (ALL_KITS_MAP.containsKey(kitName)) {
+                            logger.warn("Overwriting existing kit '{}' with kit '{}' (this means you have more than one kit with the same name)",
+                                kitName, kitName
+                            );
+                        }
+                        ALL_KITS_MAP.put(kitName, KitRecord.standaloneKit(kitName, kit));
+                    } catch (IOException | IllegalStateException | NullPointerException e) {
+                        logger.error("Error while loading kit '{}'", kitFile.getPath());
+                        e.printStackTrace();
+                    }
+                    continue;
+                }
+
+                // Legacy NBT support for kits
+                if (kitFile.getPath().endsWith(".nbt")) {
+                    try {
+                        logger.info("Loading kit '{}' (legacy NBT format)", kitFile.getName());
+                        NbtCompound kitNbt = NbtIo.read(kitFile.toPath());
+                        String fileName = kitFile.getName();
+                        String kitName = fileName.substring(0, fileName.length() - 4);
+
+                        // Parse and check if upgrade occurred
+                        var loadResult = Kit.fromNbtWithResult(kitName, kitNbt, registries);
+                        Kit kit = loadResult.kit();
+
+                        // Queue migration to JSON on IO thread if upgraded
+                        if (loadResult.wasUpgraded()) {
+                            final String finalKitName = kitName;
+                            final Kit finalKit = kit;
+                            net.minecraft.util.Util.getIoWorkerExecutor().execute(() -> {
+                                try {
+                                    logger.info("Migrating upgraded kit '{}' to JSON format", finalKitName);
+                                    saveKit(finalKitName, finalKit);
+                                } catch (IOException e) {
+                                    logger.error("Failed to migrate kit '{}' to JSON", finalKitName, e);
+                                }
+                            });
+                        }
+
+                        KIT_MAP.put(kitName, kit);
+
+                        if (ALL_KITS_MAP.containsKey(kitName)) {
+                            logger.warn("Overwriting existing kit '{}' with kit '{}' (this means you have more than one kit with the same name)",
+                                kitName, kitName
+                            );
+                        }
+                        ALL_KITS_MAP.put(kitName, KitRecord.standaloneKit(kitName, kit));
+                    } catch (IOException | IllegalStateException | NullPointerException | NbtCrashException e) {
+                        logger.error("Error while loading kit '{}'", kitFile.getPath());
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -289,21 +401,34 @@ public class KitsModStorage {
     }
 
     public void saveKit(String kitName, Kit kit) throws IOException {
-        NbtCompound root = kit.toNbt(registries);
+        var jsonElement = Kit.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), kit).getOrThrow();
+        String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(jsonElement);
 
-        NbtIo.write(
-            root,
-            KitsMod.getKitsDir().toPath().resolve(String.format("%s.nbt", kitName)).toFile().toPath()
-        );
+        Path kitPath = KitsMod.getKitsDir().toPath().resolve(String.format("%s.json", kitName));
+        Files.writeString(kitPath, json);
+
+        // Remove old NBT file if it exists
+        Path oldNbtPath = KitsMod.getKitsDir().toPath().resolve(String.format("%s.nbt", kitName));
+        try {
+            Files.deleteIfExists(oldNbtPath);
+        } catch (IOException e) {
+            logger.warn("Failed to delete old NBT file for kit '{}'", kitName, e);
+        }
     }
 
     public void saveKitRing(String kitName, KitRing ring) throws IOException {
-        NbtCompound root = new NbtCompound();
-        ring.writeNbt(root, registries);
+        var jsonElement = KitRing.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), ring).getOrThrow();
+        String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(jsonElement);
 
-        NbtIo.write(
-            root,
-            KitsMod.getKitsDir().toPath().resolve(String.format("%s.ring.nbt", kitName)).toFile().toPath()
-        );
+        Path ringPath = KitsMod.getKitsDir().toPath().resolve(String.format("%s.ring.json", kitName));
+        Files.writeString(ringPath, json);
+
+        // Remove old NBT file if it exists
+        Path oldNbtPath = KitsMod.getKitsDir().toPath().resolve(String.format("%s.ring.nbt", kitName));
+        try {
+            Files.deleteIfExists(oldNbtPath);
+        } catch (IOException e) {
+            logger.warn("Failed to delete old NBT file for kit ring '{}'", kitName, e);
+        }
     }
 }

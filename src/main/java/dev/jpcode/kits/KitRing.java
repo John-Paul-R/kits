@@ -1,25 +1,29 @@
 package dev.jpcode.kits;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.mojang.datafixers.DataFixer;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.Dynamic;
 
 import net.minecraft.item.Item;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtString;
-import net.minecraft.registry.Registries;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.RegistryOps;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+
+import dev.jpcode.kits.datafixer.KitRingDataFixer;
 
 public class KitRing {
     private Text displayName;
     private @Nullable Item displayItem;
-    private final HashMap<String, Kit> kits;
+    private final Map<String, Kit> kits;
     private final ArrayList<String> commands;
     /** a negative cooldown yields a one-time use kit ring */
     private final long cooldownMs;
@@ -28,7 +32,7 @@ public class KitRing {
         Text displayName,
         long cooldownMs,
         @Nullable Item displayItem,
-        HashMap<String, Kit> kits,
+        Map<String, Kit> kits,
         ArrayList<String> commands
     ) {
         this.displayName = displayName;
@@ -36,6 +40,22 @@ public class KitRing {
         this.displayItem = displayItem;
         this.kits = kits;
         this.commands = commands;
+    }
+
+    public static KitRing createWithData(
+        Optional<Text> displayName,
+        long cooldownMs,
+        Optional<Item> displayItem,
+        Map<String, Kit> kits,
+        ArrayList<String> commands
+    ) {
+        return new KitRing(
+            displayName.orElse(null),
+            cooldownMs,
+            displayItem.orElse(null),
+            kits,
+            commands
+        );
     }
 
     public Text displayName() {
@@ -59,7 +79,7 @@ public class KitRing {
     }
 
     /** return is mutable internal ref */
-    public HashMap<String, Kit> kits() {
+    public Map<String, Kit> kits() {
         return kits;
     }
 
@@ -89,6 +109,12 @@ public class KitRing {
     }
 
     // STORAGE
+    public static final Codec<KitRing> CODEC = dev.jpcode.kits.codec.Codecs.KIT_RING;
+
+    private static final DataFixer _kitRingDataFixer = KitRingDataFixer.createDataFixer().build().fixer();
+    private static final String SCHEMA_VERSION_KEY = "_schema_version";
+    private static final int SCHEMA_VERSION = 2;
+
     private static final class StorageKey {
         public static final String SCHEMA_VERSION = "_schema_version";
         public static final String COOLDOWN = "cooldown";
@@ -98,58 +124,66 @@ public class KitRing {
         public static final String KITS = "kits";
     }
 
-    public void writeNbt(NbtCompound root, RegistryWrapper.WrapperLookup registries) {
-        root.putInt(KitRing.StorageKey.SCHEMA_VERSION, 1);
-        root.putLong(KitRing.StorageKey.COOLDOWN, this.cooldownMs());
+    public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {
+        return CODEC.encodeStart(NbtOps.INSTANCE, this)
+            .getOrThrow()
+            .asCompound()
+            .orElseThrow();
+    }
 
-        if (this.displayName() != null) {
-            root.putString(
-                KitRing.StorageKey.DISPLAY_NAME,
-                Text.Serialization.toJsonString(this.displayName(), registries)
-            );
-        }
+    public static class DataFixResult {
+        public final NbtCompound nbt;
+        public final boolean wasUpgraded;
 
-        if (this.displayItem().isPresent()) {
-            root.putString(
-                KitRing.StorageKey.DISPLAY_ITEM,
-                Registries.ITEM.getKey(this.displayItem().get())
-                    .get().getValue().toString()
-            );
-        }
-
-        if (!commands.isEmpty()) {
-            NbtList list = new NbtList();
-            for (String command : commands) {
-                list.add(NbtString.of(command));
-            }
-            root.put(KitRing.StorageKey.COMMANDS, list);
-        }
-
-        if (!kits.isEmpty()) {
-            var kitsNbt = new NbtCompound();
-            for (var kitEntry : kits.entrySet()) {
-                var kitNbt = new NbtCompound();
-                kitEntry.getValue().writeNbt(kitNbt, registries);
-                kitsNbt.put(kitEntry.getKey(), kitNbt);
-            }
-            root.put(KitRing.StorageKey.KITS, kitsNbt);
+        public DataFixResult(NbtCompound nbt, boolean wasUpgraded) {
+            this.nbt = nbt;
+            this.wasUpgraded = wasUpgraded;
         }
     }
 
-    private static void handleReadVersion(@NotNull NbtCompound kitNbt) {
+    private static DataFixResult fixData(NbtCompound nbt) {
+        // Apply datafixer to upgrade from schema 0/1 to schema 2
+        int currentVersion = nbt.getInt(SCHEMA_VERSION_KEY, 0);
+        boolean wasUpgraded = currentVersion < SCHEMA_VERSION;
 
-        if (!kitNbt.contains(KitRing.StorageKey.SCHEMA_VERSION)) {
-            // Upgrade version nil to v1
-            // Negative cooldowns replaced with 0, since that was the old behavior
-            var cd = kitNbt.getLong(KitRing.StorageKey.COOLDOWN).orElse(0L);
+        // Handle legacy negative cooldown fix
+        if (currentVersion == 0) {
+            var cd = nbt.getLong(StorageKey.COOLDOWN).orElse(0L);
             if (cd < 0) {
-                kitNbt.putLong(KitRing.StorageKey.COOLDOWN, 0);
+                nbt.putLong(StorageKey.COOLDOWN, 0);
             }
-
-            return;
         }
-        var version = kitNbt.getInt(KitRing.StorageKey.SCHEMA_VERSION);
-        // other version handling...
+
+        nbt = _kitRingDataFixer.update(
+            KitRingDataFixer.TYPE,
+            new Dynamic<NbtElement>(NbtOps.INSTANCE, nbt),
+            currentVersion,
+            SCHEMA_VERSION
+        ).getValue().asCompound().orElseThrow();
+
+        return new DataFixResult(nbt, wasUpgraded);
+    }
+
+    public record LoadResult(KitRing ring, boolean wasUpgraded) {}
+
+    public static LoadResult fromNbtWithResult(
+        String cooldownTrackerKey,
+        NbtCompound ringNbt,
+        RegistryWrapper.WrapperLookup registries
+    ) {
+        assert ringNbt != null;
+        var fixResult = fixData(ringNbt);
+
+        KitRing ring = CODEC.parse(RegistryOps.of(NbtOps.INSTANCE, registries), fixResult.nbt)
+            .getOrThrow();
+
+        // Set cooldown tracker keys for all kits
+        for (Kit kit : ring.kits.values()) {
+            kit.setCooldownTrackerKey(cooldownTrackerKey);
+            kit.setCooldownMs(ring.cooldownMs);
+        }
+
+        return new LoadResult(ring, fixResult.wasUpgraded);
     }
 
     public static KitRing fromNbt(
@@ -157,47 +191,6 @@ public class KitRing {
         NbtCompound ringNbt,
         RegistryWrapper.WrapperLookup registries
     ) {
-        assert ringNbt != null;
-        handleReadVersion(ringNbt);
-
-        long ringCooldown = ringNbt.getLong(KitRing.StorageKey.COOLDOWN).orElse(0L);
-
-        var ringDisplayName = ringNbt
-            .getString(StorageKey.DISPLAY_NAME)
-            .map(j -> Text.Serialization.fromLenientJson(j, registries))
-            .orElse(null);
-
-        var ringDisplayItem = ringNbt.getString(KitRing.StorageKey.DISPLAY_ITEM)
-            .map(Identifier::of)
-            .map(Registries.ITEM::get)
-            .orElse(null);
-
-        ArrayList<String> commands = ringNbt.getList(KitRing.StorageKey.COMMANDS)
-            .map(l -> new ArrayList<>(ringNbt.getList(KitRing.StorageKey.COMMANDS).orElseThrow().stream().map(e -> e.asString().orElseThrow()).toList()))
-            .orElseGet(ArrayList::new);
-
-        HashMap<String, Kit> kits = ringNbt
-            .getCompound(StorageKey.KITS)
-            .map(kitsNbt -> {
-                var map = new HashMap<String, Kit>();
-                kitsNbt.entrySet()
-                    .forEach(kitEntry -> {
-                        var kit = kitEntry.getValue()
-                            .asCompound()
-                            .map(nbt -> Kit.fromNbt(cooldownTrackerKey, nbt, registries))
-                            .orElseThrow();
-
-                        kit.setCooldownMs(ringCooldown);
-
-                        map.put(
-                            kitEntry.getKey(),
-                            kit
-                        );
-                    });
-                return map;
-            })
-            .orElseGet(HashMap::new);
-
-        return new KitRing(ringDisplayName, ringCooldown, ringDisplayItem, kits, commands);
+        return fromNbtWithResult(cooldownTrackerKey, ringNbt, registries).ring();
     }
 }

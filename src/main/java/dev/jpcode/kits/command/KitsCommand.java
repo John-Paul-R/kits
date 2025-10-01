@@ -71,7 +71,7 @@ public class KitsCommand implements Command<ServerCommandSource> {
         long currentTime,
         String cooldownTrackerKey
     ) {
-        var kitCooldownRemainingMs = playerData.getKitCooldownRemainingMs(cooldownTrackerKey, kit, currentTime);
+        var kitCooldownRemainingMs = playerData.getKitCooldownRemainingMs(kit, currentTime);
         var canUseKit = kitCooldownRemainingMs <= 0;
 
         var defaultItemStack = (

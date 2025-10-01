@@ -1,26 +1,7 @@
 package dev.jpcode.kits;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
-
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.suggestion.Suggestions;
-
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-
-import dev.jpcode.kits.access.ServerPlayerEntityAccess;
-
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-
-import net.minecraft.util.Util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,42 +67,6 @@ public class KitsMod implements ModInitializer {
     public static void reload(MinecraftServer server) {
         storage.reloadKits(server);
         CONFIG.loadOrCreateProperties();
-    }
-
-    public static Stream<Map.Entry<String, Kit>> getAllKitsForPlayer(ServerPlayerEntity player) {
-        var source = player.getCommandSource();
-        return KIT_MAP.entrySet()
-            .stream()
-            .filter(kitEntry ->
-                KitPerms.checkKit(source, kitEntry.getKey())
-            );
-    }
-
-    public static Stream<Map.Entry<String, Kit>> getClaimableKitsForPlayer(ServerPlayerEntity player) {
-        var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        long currentTime = Util.getEpochTimeMs();
-
-        return getAllKitsForPlayer(player)
-            .filter(entry -> playerData.isKitOnCooldownAtTime(entry, currentTime));
-    }
-
-    /**
-     * Suggests existing kits that the user has permissions for.
-     *
-     * @param context server command context w/ player
-     * @param builder suggestions builder
-     * @return suggestions for existing kits that the user has permissions for.
-     */
-    public static CompletableFuture<Suggestions> suggestionProvider(
-        CommandContext<ServerCommandSource> context,
-        SuggestionsBuilder builder
-    ) {
-        return ListSuggestion.getSuggestionsBuilder(
-            builder,
-            getAllKitsForPlayer(context.getSource().getPlayer())
-                .map(Map.Entry::getKey)
-                .toList()
-        );
     }
 
     public static void setStarterKit(String s) {

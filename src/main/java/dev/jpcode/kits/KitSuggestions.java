@@ -24,20 +24,22 @@ public final class KitSuggestions {
         this.storage = storage;
     }
 
-    public Stream<Map.Entry<String, Kit>> getAllKitsForPlayer(ServerPlayerEntity player) {
+    public Stream<KitsModStorage.KitRecord> getAllKitsForPlayer(ServerPlayerEntity player) {
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        return storage.getKitRecords(k -> playerData.canSeeKit(k))
-            Stream.concat(
-            getAllNonRingKitsForPlayer(player),
-            getAllKitRingsForPlayer(player)
-                .flatMap(ring -> {
-                    var ringName = ring.getKey();
-                    return ring.getValue()
-                        .kits()
-                        .entrySet().stream()
-                        .filter(kitEntry -> playerData.mayClaimFromRing(ringName, kitEntry.getKey()));
-                })
-        );
+        return storage
+            .getKitRecords(k -> playerData.canSeeKit(k) && playerData.mayClaimFromRing(k.ringName(), k.kitName()))
+            ;
+//            Stream.concat(
+//            getAllNonRingKitsForPlayer(player),
+//            getAllKitRingsForPlayer(player)
+//                .flatMap(ring -> {
+//                    var ringName = ring.getKey();
+//                    return ring.getValue()
+//                        .kits()
+//                        .entrySet().stream()
+//                        .filter(kitEntry -> playerData.mayClaimFromRing(ringName, kitEntry.getKey()));
+//                })
+//        );
     }
 
     public Stream<Map.Entry<String, Kit>> getAllNonRingKitsForPlayer(ServerPlayerEntity player) {
@@ -110,7 +112,7 @@ public final class KitSuggestions {
         return ListSuggestion.getSuggestionsBuilder(
             builder,
             getAllKitsForPlayer(context.getSource().getPlayer())
-                .map(Map.Entry::getKey)
+                .map(KitsModStorage.KitRecord::kitName)
                 .toList()
         );
     }
