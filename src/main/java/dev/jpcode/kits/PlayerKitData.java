@@ -78,6 +78,11 @@ public class PlayerKitData extends PlayerData {
 
         nbt.put("kitUsedTimes", kitUsedTimesNbt);
 
+        NbtCompound ringSelectionsNbt = new NbtCompound();
+        ringSelections.forEach(ringSelectionsNbt::putString);
+
+        nbt.put("ringSelections", ringSelectionsNbt);
+
         nbt.putBoolean("hasReceivedStarterKit", this.hasReceivedStarterKit);
 
         return nbt;
@@ -91,6 +96,12 @@ public class PlayerKitData extends PlayerData {
         dataTag.getCompound("kitUsedTimes").ifPresent(kitUsedTimesNbt -> {
             for (String key : kitUsedTimesNbt.getKeys()) {
                 this.kitUsedTimes.put(key, kitUsedTimesNbt.getLong(key).orElseThrow());
+            }
+        });
+
+        dataTag.getCompound("ringSelections").ifPresent(ringSelectionsNbt -> {
+            for (String key : ringSelectionsNbt.getKeys()) {
+                this.ringSelections.put(key, ringSelectionsNbt.getString(key).orElseThrow());
             }
         });
 
@@ -112,16 +123,26 @@ public class PlayerKitData extends PlayerData {
         this.markDirty();
     }
 
-    public void resetRingSelection(String ringName) {
+    public void resetRingChoice(String ringName) {
         this.ringSelections.remove(ringName);
         this.markDirty();
+    }
+
+    public String getRingChoice(String ringName) {
+        return this.ringSelections.get(ringName);
     }
 
     // this works for a type of ring where you may choose a "track" and may
     // only select that kit within the ring thereafter
     public boolean mayClaimFromRing(String ringName, String kitName) {
-        var ringChoice = this.ringSelections.get(ringName);
+        var ringChoice = getRingChoice(ringName);
         return ringChoice == null || ringChoice.equals(kitName);
+    }
+
+    public void recordRingSelection(String ringName, String kitName) {
+        this.ringSelections.put(ringName, kitName);
+        this.markDirty();
+        this.save(DynamicRegistryManager.EMPTY);
     }
 
     public void resetAllKits() {

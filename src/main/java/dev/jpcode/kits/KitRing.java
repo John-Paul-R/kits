@@ -27,19 +27,23 @@ public class KitRing {
     private final ArrayList<String> commands;
     /** a negative cooldown yields a one-time use kit ring */
     private final long cooldownMs;
+    /** if true, the first kit claimed from this ring becomes the only kit the player can claim from it thereafter */
+    private boolean permanentChoice;
 
     public KitRing(
         Text displayName,
         long cooldownMs,
         @Nullable Item displayItem,
         HashMap<String, Kit> kits,
-        ArrayList<String> commands
+        ArrayList<String> commands,
+        boolean permanentChoice
     ) {
         this.displayName = displayName;
         this.cooldownMs = cooldownMs;
         this.displayItem = displayItem;
         this.kits = kits;
         this.commands = commands;
+        this.permanentChoice = permanentChoice;
     }
 
     public static KitRing createWithData(
@@ -47,14 +51,16 @@ public class KitRing {
         long cooldownMs,
         Optional<Item> displayItem,
         Optional<HashMap<String, Kit>> kits,
-        ArrayList<String> commands
+        ArrayList<String> commands,
+        boolean permanentChoice
     ) {
         return new KitRing(
             displayName.orElse(null),
             cooldownMs,
             displayItem.orElse(null),
             kits.orElseGet(HashMap::new),
-            commands
+            commands,
+            permanentChoice
         );
     }
 
@@ -108,6 +114,14 @@ public class KitRing {
         return this.kits.remove(kitName);
     }
 
+    public boolean permanentChoice() {
+        return permanentChoice;
+    }
+
+    public void setPermanentChoice(boolean permanentChoice) {
+        this.permanentChoice = permanentChoice;
+    }
+
     // STORAGE
     public static final Codec<KitRing> CODEC = dev.jpcode.kits.codec.Codecs.RING_METADATA;
 
@@ -122,6 +136,7 @@ public class KitRing {
         public static final String DISPLAY_ITEM = "display_item";
         public static final String COMMANDS = "commands";
         public static final String KITS = "kits";
+        public static final String PERMANENT_CHOICE = "permanent_choice";
     }
 
     public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {

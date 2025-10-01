@@ -56,7 +56,20 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
                 "Insufficient permissions for kit '%s'.",
                 kitName)));
             return -1;
-        } else if (cooldown < 0 && lastUsed.isPresent()) {
+        }
+
+        // Check permanent choice for rings
+        if (kitRecord.ring() != null && kitRecord.ring().permanentChoice()) {
+            if (!playerData.mayClaimFromRing(kitRecord.ringName(), kitName)) {
+                commandSource.sendError(Text.of(String.format(
+                    "You have already chosen '%s' as your kit for ring '%s'.",
+                    playerData.getRingChoice(kitRecord.ringName()),
+                    kitRecord.ringName())));
+                return -1;
+            }
+        }
+
+        if (cooldown < 0 && lastUsed.isPresent()) {
             commandSource.sendError(Text.of(String.format(
                 "Kit '%s' can only be claimed once.",
                 kitName)));
@@ -73,6 +86,12 @@ public class KitClaimCommand implements Command<ServerCommandSource> {
 
         PlayerInventory playerInventory = player.getInventory();
         playerData.useKit(kitName, kitRecord.cooldownKey());
+
+        // Record ring selection if this is a permanent choice ring
+        if (kitRecord.ring() != null && kitRecord.ring().permanentChoice()) {
+            playerData.recordRingSelection(kitRecord.ringName(), kitName);
+        }
+
         offerAllCopies(kit.inventory(), playerInventory);
         if (!kit.commands().isEmpty()) runCommands(player, kit.commands());
 
