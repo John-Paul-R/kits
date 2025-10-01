@@ -1,11 +1,8 @@
 plugins {
     id 'java'
-    id 'checkstyle'
+    id 'fabric-loom' version "${loom_version}"
     id 'maven-publish'
-    id 'com.modrinth.minotaur' version '2.+'
-    id 'com.matthewprenger.cursegradle' version '1.4.0'
-    id "com.github.breadmoirai.github-release" version "2.3.7"
-    id 'fabric-loom' version '1.10.1'
+    id "com.hypherionmc.modutils.modpublisher" version "2.1.6"
 }
 
 ext.env = loadenv()
@@ -15,17 +12,20 @@ String getenv(String key) {
 }
 
 allprojects {
-    apply plugin: 'java'
-    apply plugin: 'checkstyle'
     apply plugin: 'fabric-loom'
     apply plugin: 'idea'
 
     group = project.maven_group
-    String full_version = "${project.mod_version}-mc${project.minecraft_version}"
-    version = full_version
-    archivesBaseName = "${project.mod_id}"
+    String vers_suffix = getenv("VERSION_SUFFIX")
+    String full_version = vers_suffix != 'NOT FOUND' && vers_suffix != ''
+        ? "${project.mod_version}-mc${project.minecraft_version}+${vers_suffix}"
+        : "${project.mod_version}-mc${project.minecraft_version}"
 
-    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_17
+    version = full_version
+    base.archivesName = "${project.mod_id}"
+    println "version: $full_version"
+    println "base.archivesName: $base.archivesName"
+
 
     // Declare dependencies
     dependencies {
@@ -41,8 +41,10 @@ allprojects {
 
         // Code Quality
         compileOnly "org.jetbrains:annotations:${project.jetbrains_annotations_version}"
-        testImplementation "org.junit.jupiter:junit-jupiter-api:${project.junit_jupiter_version}"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${project.junit_jupiter_version}"
+        testImplementation platform("org.junit:junit-bom:${project.junit_bom_version}")
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+        testImplementation "net.fabricmc:fabric-loader-junit:${project.loader_version}"
 
         // JiJ Dependencies
         modApi  "me.lucko:fabric-permissions-api:${project.permissions_api_version}"
@@ -55,7 +57,6 @@ allprojects {
         }
     }
 
-    // Perform tests using the JUnit test suite
     test {
         useJUnitPlatform()
     }
@@ -70,30 +71,22 @@ allprojects {
         it.from rootProject.file('LICENCE')
     }
 
-    // Process any resources
     processResources {
         inputs.property 'id', project.mod_id
         inputs.property 'name', project.mod_name
         inputs.property 'version', project.version
 
-        // fabric.mod.json
         filesMatching('fabric.mod.json') {
             expand(['id': project.mod_id, 'name': project.mod_name, 'version': project.version])
         }
     }
 
-    // Perform linting using Checkstyle
-    checkstyle {
-        // use one common config file for all subprojects
-        configFile = project(':').file('.checkstyle.xml')
-        configProperties = [ "suppressionFile" : project(':').file('.checkstyle-suppressions.xml')]
-    }
 
-    // Add any additional repositories
     repositories {
+        gradlePluginPortal()
         mavenCentral()
+        mavenLocal()
         maven { name 'Fabric'; url 'https://maven.fabricmc.net/' }
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
         maven { url 'https://maven.nucleoid.xyz' }
     }
 }
@@ -105,156 +98,37 @@ tasks.withType(JavaCompile).configureEach {
     // If Javadoc is generated, this must be specified in that task too.
     it.options.encoding = "UTF-8"
 
-    // Minecraft 1.18 upwards uses Java 17.
-    it.options.release.set(17)
+    it.options.release.set(21)
 }
 
-configurations.all {
-    resolutionStrategy {
-        force("net.fabricmc:fabric-loader:$loader_version")
-    }
-}
 
-// Define how artifacts are published to Modrinth (https://modrinth.com)
-import com.modrinth.minotaur.TaskModrinthUpload
-import com.modrinth.minotaur.request.VersionType
 
-modrinth {
-    token = getenv("MODRINTH") // An environment property called MODRINTH that is your token, set via Gradle CLI, GitHub Actions, Idea Run Configuration, or other
-    projectId = project.mr_project_id
-    versionNumber = project.version // Will fail if Modrinth has this version already
-    versionType = project.version.contains('alpha') ? VersionType.ALPHA.toString()
-        : project.version.contains('beta') ? VersionType.BETA.toString()
-        : VersionType.RELEASE.toString()
-
-    // On fabric, use 'remapJar' instead of 'jar'
-
-    uploadFile = remapJar
-    // This is the java jar task. If it can't find the jar, try 'jar.outputs.getFiles().asPath' in place of 'jar'
-    gameVersions = List.of(project.mr_game_versions.split(','))
-    changelog = readChangelogFromFile()
-    loaders = ['fabric']
-
-//    dependencies = {
-//        var requiredMods = (project.mr_relations_required).split(',').collect { new ModDependency(it, DependencyType.REQUIRED)}
-//        var optionalMods = (project.mr_relations_optional).split(',').collect { new ModDependency(it, DependencyType.OPTIONAL)}
-//        var incompatibleMods = (project.mr_relations_incompatible).split(',').collect { new ModDependency(it, DependencyType.INCOMPATIBLE)}
-//
-//        var outList = new ArrayList<ModDependency>(requiredMods.size() + optionalMods.size() + incompatibleMods.size())
-//        outList.addAll(requiredMods)
-//        outList.addAll(optionalMods)
-//        outList.addAll(incompatibleMods)
-//        return outList
-//    }()
-}
-
-task publishModrinth(type: TaskModrinthUpload) { // Make sure it runs after build!
-    description 'Uploads all Modrinth projects'
-    group 'upload'
-
-    onlyIf {
-        // Only attempt to run this task if the MODRINTH variable is set in .env, otherwise SKIP it
-        env.containsKey("MODRINTH")
-    }
-}
-// Define how artifacts are published to CurseForge (https://curseforge.com)
-curseforge {
-    apiKey = getenv("CURSEFORGE")
-
-    // Declare all projects
-    //noinspection GroovyAssignabilityCheck
-    project {
-        // Set the project id
-        id = project.cf_project_id
-        // Set the release type
-        releaseType = project.version.contains('alpha') ? 'alpha'
-            : project.version.contains('beta') ? 'beta'
-            : 'release'
-        // Set the release notes
-        changelog = "For a list of changes, please refer to https://github.com/${project.github_repo}/releases/tag/${project.version}"
-        // Add all supported game versions
-        project.cf_game_versions.split(',').each { addGameVersion it }
-        // Add the main artifact
-        mainArtifact(remapJar) { displayName = "${project.version}" }
-
-        // Add any additional artifacts
-        subprojects.each {
-            addArtifact it.remapJar
-//            addArtifact it.sourcesJar
-//            addArtifact it.jar
-        }
-        // Add any dependencies
-        relations {
-            if (project.cf_relations_required) project.cf_relations_required.split(',').each { requiredDependency it }
-            if (project.cf_relations_optional) project.cf_relations_optional.split(',').each { optionalDependency it }
-            if (project.cf_relations_embedded) project.cf_relations_embedded.split(',').each { embeddedLibrary it }
-            if (project.cf_relations_tools) project.cf_relations_tools.split(',').each { tool it }
-            if (project.cf_relations_incompatible) project.cf_relations_incompatible.split(',').each { incompatible it }
-        }
-    }
-
-    // Configure other options
-    options {
-        forgeGradleIntegration = false
-    }
-}
-
-tasks.getByName("githubRelease").each { task -> configure(task) {
-    description 'Creates a GitHub Release for the project'
-    group 'upload'
-    onlyIf {
-        env.containsKey("GITHUB")
-    }
-}}
-githubRelease {
-    token = getenv("GITHUB") // This is your personal access token with Repo permissions
-    // You get this from your user settings > developer settings > Personal Access Tokens
-    owner = project.gh_owner // default is the last part of your group. Eg group: "com.github.breadmoirai" => owner: "breadmoirai"
-    repo = project.gh_repo // by default this is set to your project name
-    tagName = project.version as String // by default this is set to "v${project.version}"
-    targetCommitish = "1.21.1" // by default this is set to "master"
-    releaseName = project.version as String // Release title, by default this is the same as the tagName
-    body = readChangelogFromFile() // by default this is empty
-    draft = false // by default this is false
-    prerelease = false // by default this is false
-    releaseAssets libsDirectory
-        .getAsFileTree()
-        .matching((PatternFilterable pattern) -> pattern.include("**/*${project.version}.jar"))
-    //jar.outputs.getFiles().asPath//
-    overwrite = false // by default false; if set to true, will delete an existing release with the same tag and name
-    dryRun = false // by default false; you can use this to see what actions would be taken without making a release
-    apiEndpoint = "https://api.github.com" // should only change for github enterprise users
-    client // This is the okhttp client used for http requests
-    allowUploadToExisting = false
-}
-
-// Define how packages are published
 publishing {
-    // Declare all publications
     publications {
         mavenJava(MavenPublication) {
-            // Main
+            artifactId = project.mod_id
+            groupId = project.maven_group
+            version = project.version
             artifact(remapJar) { builtBy remapJar }
-            // Sources
-            artifact(sourcesJar) { builtBy remapSourcesJar }
+            artifact(sourcesJar) {
+                builtBy remapSourcesJar
+            }
         }
     }
-
-    // Add repositories to publish to
     repositories {
-        // GitHub Packages (https://pkg.github.com)
+        mavenLocal { }
         maven {
             name 'GitHub'
-            url "https://maven.pkg.github.com/${project.github_repo}"
+            url "https://maven.pkg.github.com/${project.gh_owner}/${project.gh_repo}"
             credentials {
-                username getenv('GITHUB_ACTOR') as String
-                password getenv('GITHUB_TOKEN') as String
+                username = getenv('GITHUB_ACTOR')
+                password = getenv('GITHUB_TOKEN')
             }
         }
     }
 }
 
-def static loadenv(path = ".env") {
+def static loadenv(String path = ".env") {
     def env = [:]
 
     def file = new File(path)
@@ -264,17 +138,151 @@ def static loadenv(path = ".env") {
             env[name.trim()] = value.trim()
         }
     }
+    for (el in System.getenv()) {
+        env[el.key] = el.value
+    }
     return env
 }
 
+ext.cachedChangelog = null
+
 String readChangelogFromFile() {
+    if (ext.cachedChangelog != null) {
+        return ext.cachedChangelog
+    }
+
     String changelogFilePath = './changelog.md'
     var file = new File(changelogFilePath)
     if (!file.exists()) {
         logger.warn("'%s' not found.", changelogFilePath)
-        return "changelog file not found"
+        ext.cachedChangelog = "changelog file not found"
+        return ext.cachedChangelog
     }
-    return file.getText('UTF-8')
+
+    ext.cachedChangelog = file.getText('UTF-8')
+    return ext.cachedChangelog
 }
 
-publish.finalizedBy tasks.curseforge, tasks.modrinth
+String readLatestChangelogSection() {
+    String fullChangelog = readChangelogFromFile()
+
+    if (fullChangelog == "changelog file not found") {
+        return fullChangelog
+    }
+
+    String[] sections = fullChangelog.split('--- --- ---')
+    String mostRecentSection = sections[0].trim()
+
+    var dashIdx = project.mod_version.indexOf('-')
+    var plusIdx = project.mod_version.indexOf('+')
+    var indexOfMainVersionEnd
+        = dashIdx != -1 && plusIdx != -1 ? Math.min(dashIdx, plusIdx)
+        : dashIdx != -1                  ? dashIdx
+        : plusIdx != -1                  ? plusIdx
+        :                                  project.mod_version.length()
+
+    var mod_main_version = project.mod_version.substring(0, indexOfMainVersionEnd)
+
+    if (!mostRecentSection.contains("v$mod_main_version")) {
+        throw new RuntimeException("Changelog does not contain a section for the current version")
+    }
+
+    String suffix = """---
+
+If you discover any bugs, you can report them in the [Issue Tracker](https://github.com/${project.gh_owner}/${project.gh_repo}/issues).
+
+Additional conversation can be had in the [dev room discord](https://discord.jpcode.dev/kits).
+
+"""
+
+    return mostRecentSection + '\n\n' + suffix
+}
+
+// ModPublisher Configuration
+publisher {
+    apiKeys {
+        modrinth getenv("MODRINTH")
+        curseforge getenv("CURSEFORGE")
+        github getenv("GITHUB")
+    }
+
+    setDebug(false)
+
+    setCurseID(project.cf_project_id)
+    setModrinthID(project.mr_project_id)
+
+    setVersionType(project.version.contains('alpha') ? 'alpha'
+        : project.version.contains('beta') ? 'beta'
+        : 'release')
+
+    setChangelog(readLatestChangelogSection())
+    setProjectVersion(project.version as String)
+    setDisplayName(project.version as String)
+
+    setGameVersions(project.game_versions.split(',').collect { it.trim() })
+
+    setLoaders("fabric")
+    setCurseEnvironment("both")
+
+    setArtifact(remapJar)
+    setJavaVersions([JavaVersion.VERSION_21])
+
+    // Add subproject artifacts as additional files
+    subprojects.each { subproject ->
+        addAdditionalFile(subproject.remapJar)
+    }
+
+    github {
+        repo("${project.gh_owner}/${project.gh_repo}")
+        tag(project.version as String)
+        target("1.21.x")
+    }
+
+    modrinthDepends {
+        if (project.hasProperty('mr_relations_required') && project.mr_relations_required?.trim()) {
+            project.mr_relations_required.split(',').each { dep ->
+                required dep.trim()
+            }
+        }
+        if (project.hasProperty('mr_relations_optional') && project.mr_relations_optional?.trim()) {
+            project.mr_relations_optional.split(',').each { dep ->
+                optional dep.trim()
+            }
+        }
+        if (project.hasProperty('mr_relations_embedded') && project.mr_relations_embedded?.trim()) {
+            project.mr_relations_embedded.split(',').each { dep ->
+                embedded dep.trim()
+            }
+        }
+        if (project.hasProperty('mr_relations_incompatible') && project.mr_relations_incompatible?.trim()) {
+            project.mr_relations_incompatible.split(',').each { dep ->
+                incompatible dep.trim()
+            }
+        }
+    }
+
+    curseDepends {
+        if (project.hasProperty('cf_relations_required') && project.cf_relations_required?.trim()) {
+            project.cf_relations_required.split(',').each { dep ->
+                required dep.trim()
+            }
+        }
+        if (project.hasProperty('cf_relations_optional') && project.cf_relations_optional?.trim()) {
+            project.cf_relations_optional.split(',').each { dep ->
+                optional dep.trim()
+            }
+        }
+        if (project.hasProperty('cf_relations_embedded') && project.cf_relations_embedded?.trim()) {
+            project.cf_relations_embedded.split(',').each { dep ->
+                embedded dep.trim()
+            }
+        }
+        if (project.hasProperty('cf_relations_incompatible') && project.cf_relations_incompatible?.trim()) {
+            project.cf_relations_incompatible.split(',').each { dep ->
+                incompatible dep.trim()
+            }
+        }
+    }
+}
+
+generatePomFileForMavenJavaPublication {}
