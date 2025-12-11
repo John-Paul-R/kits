@@ -20,7 +20,7 @@ public final class KitUtil {
         CommandManager commandManager = Objects.requireNonNull(server).getCommandManager();
         for (String command : commands) {
             command = command.replace("@p", player.getName().getString());
-            commandManager.executeWithPrefix(server.getCommandSource(), command);
+            commandManager.parseAndExecute(server.getCommandSource(), command);
         }
     }
 }
