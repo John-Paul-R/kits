@@ -16,11 +16,11 @@ public final class KitUtil {
     }
 
     public static void runCommands(ServerPlayerEntity player, ArrayList<String> commands) {
-        MinecraftServer server = player.getServer();
+        MinecraftServer server = player.getEntityWorld().getServer();
         CommandManager commandManager = Objects.requireNonNull(server).getCommandManager();
         for (String command : commands) {
             command = command.replace("@p", player.getName().getString());
-            commandManager.executeWithPrefix(server.getCommandSource(), command);
+            commandManager.parseAndExecute(server.getCommandSource(), command);
         }
     }
 }

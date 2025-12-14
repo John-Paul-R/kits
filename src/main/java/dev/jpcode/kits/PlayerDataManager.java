@@ -62,7 +62,7 @@ public class PlayerDataManager {
         // Auto-saving should be handled by WorldSaveHandlerMixin. (PlayerData saves when MC server saves players)
         instance.unloadPlayerData(player);
         ((ServerPlayerEntityAccess) player).kits$getPlayerData()
-            .save(Objects.requireNonNull(player.getServer()).getRegistryManager());
+            .save(Objects.requireNonNull(player.getEntityWorld().getServer()).getRegistryManager());
     }
 
     public static void handlePlayerDataRespawnSync(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {
