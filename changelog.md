@@ -1,4 +1,11 @@
 
+## Kits `v1.8.0-mc1.21.11`
+
+### Changes
+
+- add Kit Rings feature ([documentation](https://github.com/John-Paul-R/kits/blob/1.21.x/docs/RINGS.md))
+- update to Minecraft 1.21.11 (thanks @arnokeesman)
+- add datafixer for enchantments format change
 
 ## Kits `v1.7.1-mc1.21.7`
 
