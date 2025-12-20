@@ -171,7 +171,7 @@ public class Kit {
 
     private static final DataFixer _kitDataFixer = KitDataFixer.createDataFixer().build().fixer();
     private static final String SCHEMA_VERSION_KEY = "_schema_version";
-    private static final int SCHEMA_VERSION = 2;
+    private static final int SCHEMA_VERSION = 3;
 
     private static final class StorageKey {
         public static final String SCHEMA_VERSION = "_schema_version";

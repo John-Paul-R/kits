@@ -127,7 +127,7 @@ public class KitRing {
 
     private static final DataFixer _kitRingDataFixer = KitRingDataFixer.createDataFixer().build().fixer();
     private static final String SCHEMA_VERSION_KEY = "_schema_version";
-    private static final int SCHEMA_VERSION = 2;
+    private static final int SCHEMA_VERSION = 3;
 
     public static final class StorageKey {
         public static final String SCHEMA_VERSION = "_schema_version";

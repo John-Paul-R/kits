@@ -57,8 +57,21 @@ public class KitDataFixer {
         }
     }
 
+    public static class FixEnchantmentFormatFix extends DataFix {
+        public FixEnchantmentFormatFix(Schema outputSchema) {
+            super(outputSchema, false);
+        }
+
+        @Override
+        public TypeRewriteRule makeRule() {
+            Type<?> inputType = getInputSchema().getType(TYPE);
+            return fixTypeEverywhereTyped("Kit enchantment format migration", inputType,
+                typed -> typed.update(DSL.remainderFinder(), KitDataFixer::fixEnchantmentFormat));
+        }
+    }
+
     public static DataFixerBuilder createDataFixer() {
-        DataFixerBuilder builder = new DataFixerBuilder(2);
+        DataFixerBuilder builder = new DataFixerBuilder(3);
 
         // Schema 0-1: Original format with PascalCase ItemStack fields
         builder.addSchema(0, KitSchema::new);
@@ -66,6 +79,10 @@ public class KitDataFixer {
         // Schema 2: New format with lowercase ItemStack fields
         Schema v2Schema = builder.addSchema(2, KitSchema::new);
         builder.addFixer(new FixItemStackFieldsFix(v2Schema));
+
+        // Schema 3: Fix enchantment format (remove nested "levels" structure)
+        Schema v3Schema = builder.addSchema(3, KitSchema::new);
+        builder.addFixer(new FixEnchantmentFormatFix(v3Schema));
 
         return builder;
     }
@@ -82,10 +99,39 @@ public class KitDataFixer {
         });
     }
 
+    private static <T> Dynamic<T> fixEnchantmentFormat(Dynamic<T> dynamic) {
+        // Fix enchantment format - remove nested "levels" structure
+        // OLD: {"minecraft:enchantments": {"levels": {"minecraft:feather_falling": 4}}}
+        // NEW: {"minecraft:enchantments": {"minecraft:feather_falling": 4}}
+        return dynamic.update("inventory", inventoryList -> {
+            var streamResult = inventoryList.asStreamOpt().result();
+            if (streamResult.isPresent()) {
+                return inventoryList.createList(streamResult.get().map(KitDataFixer::fixInventoryItemEnchantments));
+            }
+            return inventoryList;
+        });
+    }
+
     private static <T> Dynamic<T> fixInventoryItem(Dynamic<T> dynamic) {
         // ItemStack field renames for codec compatibility (Item -> id, Count -> count)
         // Fields are flattened at the same level as 'slot', not nested
         return renameField(renameField(dynamic, "Item", "id"), "Count", "count");
+    }
+
+    private static <T> Dynamic<T> fixInventoryItemEnchantments(Dynamic<T> dynamic) {
+        // Fix enchantment component structure
+        // OLD: {"components": {"minecraft:enchantments": {"levels": {"minecraft:feather_falling": 4}}}}
+        // NEW: {"components": {"minecraft:enchantments": {"minecraft:feather_falling": 4}}}
+        return dynamic.update("components", KitDataFixer::fixEnchantmentComponent);
+    }
+
+    private static <T> Dynamic<T> fixEnchantmentComponent(Dynamic<T> components) {
+        // Check if minecraft:enchantments exists and has a "levels" key - if so, flatten it
+        return components.get("minecraft:enchantments").result()
+            .flatMap(enchantments -> enchantments.get("levels").result()
+                .map(levelsValue -> components.set("minecraft:enchantments", levelsValue))
+            )
+            .orElse(components);
     }
 
     private static <T> Dynamic<T> renameField(Dynamic<T> dynamic, String oldName, String newName) {
