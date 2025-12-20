@@ -1,11 +1,13 @@
-
 ## Kits `v1.8.0-mc1.21.11`
 
 ### Changes
 
-- add Kit Rings feature ([documentation](https://github.com/John-Paul-R/kits/blob/1.21.x/docs/RINGS.md))
+- add Kit Rings feature
+  ([documentation](https://github.com/John-Paul-R/kits/blob/1.21.x/docs/RINGS.md))
 - update to Minecraft 1.21.11 (thanks @arnokeesman)
 - add datafixer for enchantments format change
+
+---
 
 ## Kits `v1.7.1-mc1.21.7`
 
@@ -14,11 +16,11 @@
 - update to Minecraft 1.21.7
 - Update kit serialization to match new `PlayerInventory` serialization strategy
 - fix kits sometimes using a nested directory for storing kit files
-  - you'll get a message in your server console on server start if you're
-    affected with instructions on how to fix, if it can't be auto-fixed
+    - you'll get a message in your server console on server start if you're
+      affected with instructions on how to fix, if it can't be auto-fixed
 - assorted build/tooling/dependency/publishing updgrades
 
---- --- ---
+---
 
 ## Kits `v1.7.0-mc1.21.5`
 
@@ -31,4 +33,3 @@
 - fix storing enchanted armor and offhand as well
 
 Big thanks to Arno for being an absolute powerhouse in this release.
-
