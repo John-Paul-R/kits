@@ -4,8 +4,8 @@
   "package": "dev.jpcode.kits.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "PlayerManagerMixin",
-    "ServerPlayerEntityMixin"
+    "PlayerListMixin",
+    "ServerPlayerMixin"
   ],
   "server": [],
   "client": [

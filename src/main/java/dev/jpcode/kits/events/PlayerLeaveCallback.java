@@ -1,6 +1,6 @@
 package dev.jpcode.kits.events;
 
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
@@ -14,6 +14,6 @@ public interface PlayerLeaveCallback {
             }
         });
 
-    void onPlayerLeave(ServerPlayerEntity player);
+    void onPlayerLeave(ServerPlayer player);
 
 }
