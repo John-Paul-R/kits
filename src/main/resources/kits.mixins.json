@@ -8,9 +8,7 @@
     "ServerPlayerMixin"
   ],
   "server": [],
-  "client": [
-    "TitleScreenMixin"
-  ],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   }

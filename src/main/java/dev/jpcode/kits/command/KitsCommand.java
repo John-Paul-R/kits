@@ -3,7 +3,7 @@ package dev.jpcode.kits.command;
 import java.util.List;
 
 import eu.pb4.sgui.api.SlotHolder;
-import eu.pb4.sgui.api.gui.SimpleGuiBuilder;
+import eu.pb4.sgui.api.gui.SimpleGui;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
@@ -44,24 +44,13 @@ public class KitsCommand implements Command<CommandSourceStack> {
         return Command.SINGLE_SUCCESS;
     }
 
-    interface IScreen {
-        void paint(
-            ServerPlayer player,
-            SimpleGuiBuilder simpleGuiBuilder,
-            SlotHolder gui
-        );
-
-        void open();
-    }
-
     private void openKitsScreen(ServerPlayer player) {
-        var simpleGuiBuilder = new SimpleGuiBuilder(MenuType.GENERIC_9x3, false);
-        simpleGuiBuilder.setLockPlayerInventory(true);
-        simpleGuiBuilder.setTitle(Component.literal(CONFIG.kitsMenuTitle.getValue()));
+        var simpleGui = new SimpleGui(MenuType.GENERIC_9x3, player, false);
+        simpleGui.setLockPlayerInventory(true);
+        simpleGui.setTitle(Component.literal(CONFIG.kitsMenuTitle.getValue()));
 
-        paintKitsScreen(player, simpleGuiBuilder);
+        paintKitsScreen(player, simpleGui);
 
-        var simpleGui = simpleGuiBuilder.build(player);
         simpleGui.open();
     }
 
@@ -98,13 +87,12 @@ public class KitsCommand implements Command<CommandSourceStack> {
     }
 
     private void openKitRingScreen(ServerPlayer player, String ringName, KitRing ring) {
-        var simpleGuiBuilder = new SimpleGuiBuilder(MenuType.GENERIC_9x3, false);
-        simpleGuiBuilder.setLockPlayerInventory(true);
-        simpleGuiBuilder.setTitle(Component.literal(CONFIG.kitsMenuTitle.getValue()));
+        var simpleGui = new SimpleGui(MenuType.GENERIC_9x3, player, false);
+        simpleGui.setLockPlayerInventory(true);
+        simpleGui.setTitle(Component.literal(CONFIG.kitsMenuTitle.getValue()));
 
-        paintKitRingScreen(player, simpleGuiBuilder, ringName, ring);
+        paintKitRingScreen(player, simpleGui, ringName, ring);
 
-        var simpleGui = simpleGuiBuilder.build(player);
         simpleGui.open();
     }
 

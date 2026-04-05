@@ -157,7 +157,7 @@ public final class KitsCommandRegistry {
                         var item = ItemArgument.getItem(context, "item");
 
                         var existingKit = storage.KIT_MAP.get(kitName);
-                        existingKit.setDisplayItem(item.getItem());
+                        existingKit.setDisplayItem(item.item().value());
                         try {
                             storage.saveKit(kitName, existingKit);
                         } catch (IOException e) {
@@ -343,7 +343,7 @@ public final class KitsCommandRegistry {
                         var item = ItemArgument.getItem(context, "item");
 
                         var existingRing = storage.KIT_RING_MAP.get(ringName);
-                        existingRing.setDisplayItem(item.getItem());
+                        existingRing.setDisplayItem(item.item().value());
                         try {
                             storage.saveKitRingMetadata(ringName, existingRing);
                         } catch (IOException e) {

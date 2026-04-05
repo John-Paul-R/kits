@@ -1,19 +1,17 @@
 package dev.jpcode.kits.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import net.minecraft.network.Connection;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.portal.TeleportTransition;
 
 import dev.jpcode.kits.PlayerDataManager;
 import dev.jpcode.kits.events.PlayerConnectCallback;
@@ -47,32 +45,25 @@ public abstract class PlayerListMixin {
             // created. This lets us update the EC PlayerData, sooner, might be
             // before the new ServerPlayerEntity is fully initialized.
             target = "Lnet/minecraft/server/level/ServerPlayer;restoreFrom(Lnet/minecraft/server/level/ServerPlayer;Z)V"
-        ),
-        locals = LocalCapture.CAPTURE_FAILHARD)
-    public void onRespawnPlayer(ServerPlayer oldServerPlayerEntity,
+        )
+    )
+    public void onRespawnPlayerEarly(ServerPlayer oldServerPlayerEntity,
                                 boolean alive,
                                 Entity.RemovalReason removalReason,
                                 CallbackInfoReturnable<ServerPlayer> cir,
-                                TeleportTransition teleportTarget,
-                                ServerLevel serverWorld,
-                                ServerPlayer serverPlayerEntity) {
+                                     @Local(name = "player") ServerPlayer serverPlayerEntity) {
         PlayerDataManager.handlePlayerDataRespawnSync(oldServerPlayerEntity, serverPlayerEntity);
     }
 
-    @SuppressWarnings("InvalidInjectorMethodSignature")
     @Inject(method = "respawn", at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/server/level/ServerLevel;getLevelData()Lnet/minecraft/world/level/storage/LevelData;"
-        ), locals = LocalCapture.CAPTURE_FAILHARD)
+        value = "INVOKE",
+        target = "Lnet/minecraft/server/level/ServerLevel;getLevelData()Lnet/minecraft/world/level/storage/LevelData;"
+    ))
     public void onRespawnPlayer(ServerPlayer oldServerPlayerEntity,
                                 boolean alive,
                                 Entity.RemovalReason removalReason,
                                 CallbackInfoReturnable<ServerPlayer> cir,
-                                TeleportTransition teleportTarget,
-                                ServerLevel serverWorld,
-                                ServerPlayer serverPlayerEntity,
-                                byte b,
-                                ServerLevel serverWorld2) {
+                                @Local(name = "player") ServerPlayer serverPlayerEntity) {
         PlayerRespawnCallback.EVENT.invoker().onPlayerRespawn(oldServerPlayerEntity, serverPlayerEntity);
     }
 }
