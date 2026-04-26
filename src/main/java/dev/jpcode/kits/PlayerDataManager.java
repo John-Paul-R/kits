@@ -4,12 +4,12 @@ import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.UUID;
 
-import net.minecraft.network.Connection;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+
 import net.minecraft.server.level.ServerPlayer;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.events.PlayerConnectCallback;
-import dev.jpcode.kits.events.PlayerLeaveCallback;
 
 public class PlayerDataManager {
 
@@ -30,16 +30,17 @@ public class PlayerDataManager {
 
     static {
         PlayerConnectCallback.EVENT_HEAD.register(PlayerDataManager::onPlayerConnect);
-        PlayerConnectCallback.EVENT_RETURN.register(PlayerDataManager::onPlayerConnectTail);
-        PlayerLeaveCallback.EVENT.register(PlayerDataManager::onPlayerLeave);
+        ServerPlayerEvents.JOIN.register(PlayerDataManager::onPlayerConnectTail);
+        ServerPlayerEvents.LEAVE.register(PlayerDataManager::onPlayerLeave);
+        ServerPlayerEvents.COPY_FROM.register(PlayerDataManager::handlePlayerDataRespawnSync);
     }
 
-    public static void onPlayerConnect(Connection connection, ServerPlayer player) {
+    public static void onPlayerConnect(ServerPlayer player) {
         PlayerKitData playerData = instance.addPlayer(player);
         ((ServerPlayerEntityAccess) player).kits$setPlayerData(playerData);
     }
 
-    private static void onPlayerConnectTail(Connection connection, ServerPlayer player) {
+    private static void onPlayerConnectTail(ServerPlayer player) {
         PlayerKitData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         // Detect if player has gotten starter kit
         if (!playerData.hasReceivedStarterKit()) {
@@ -65,7 +66,7 @@ public class PlayerDataManager {
             .save(Objects.requireNonNull(player.level().getServer()).registryAccess());
     }
 
-    public static void handlePlayerDataRespawnSync(ServerPlayer oldPlayerEntity, ServerPlayer newPlayerEntity) {
+    public static void handlePlayerDataRespawnSync(ServerPlayer oldPlayerEntity, ServerPlayer newPlayerEntity, boolean alive) {
         var oldPlayerAccess = ((ServerPlayerEntityAccess) oldPlayerEntity);
         var newPlayerAccess = ((ServerPlayerEntityAccess) newPlayerEntity);
 
