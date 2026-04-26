@@ -10,7 +10,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
 public final class TimeUtil {
 
@@ -42,7 +42,7 @@ public final class TimeUtil {
         return time * TIME_WEIGHTS.get(timeUnit);
     }
 
-    public static CompletableFuture<Suggestions> suggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+    public static CompletableFuture<Suggestions> suggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         return ListSuggestion.getSuggestionsBuilder(builder, TIME_WEIGHTS.keySet());
     }
 
