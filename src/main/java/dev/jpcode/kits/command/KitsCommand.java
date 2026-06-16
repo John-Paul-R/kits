@@ -125,7 +125,7 @@ public class KitsCommand implements Command<CommandSourceStack> {
         var defaultItemStack = (
                 canUseKit
                     ? kit.kit().displayItem().orElse(Items.EMERALD_BLOCK)
-                    : Items.GRAY_CONCRETE_POWDER
+                    : Items.CONCRETE_POWDER.gray()
             ).getDefaultInstance();
 
         ItemStack newItemStack = defaultItemStack.copy();
@@ -158,8 +158,8 @@ public class KitsCommand implements Command<CommandSourceStack> {
 
         var defaultItemStack = (
             canUseKit
-                ? ring.displayItem().orElse(Items.LIME_CONCRETE)
-                : Items.GRAY_CONCRETE_POWDER
+                ? ring.displayItem().orElse(Items.CONCRETE.lime())
+                : Items.CONCRETE_POWDER.gray()
         ).getDefaultInstance();
 
         ItemStack newItemStack = defaultItemStack.copy();
