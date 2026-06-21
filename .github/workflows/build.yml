@@ -41,7 +41,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 25
-          distribution: adopt
+          distribution: temurin
 
       - name: 📷 Begin Gradle cache
         uses: actions/cache@v4
@@ -64,7 +64,7 @@ jobs:
         env:
           IS_PIPELINE: true
           VERSION_SUFFIX: ${{ steps.version_suffix.outputs.version_suffix }}
-        run: gradle clean build
+        run: ./gradlew clean build
 
       - name: 🎯 Prepare mod-only artifact dir
         run: |
