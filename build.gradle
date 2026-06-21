@@ -1,9 +1,20 @@
 plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
+    id "com.hypherionmc.modutils.modpublisher" version "2.1.6"
 }
 
-version = "${project.mod_version}-mc${project.minecraft_version}"
+ext.env = loadenv()
+
+String getenv(String key) {
+    return env.getOrDefault(key, "NOT FOUND")
+}
+
+String vers_suffix = getenv("VERSION_SUFFIX")
+version = vers_suffix != 'NOT FOUND' && vers_suffix != ''
+    ? "${project.mod_version}-mc${project.minecraft_version}+${vers_suffix}"
+    : "${project.mod_version}-mc${project.minecraft_version}"
+
 group = project.maven_group
 
 base {
@@ -11,13 +22,8 @@ base {
 }
 
 repositories {
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
     maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-    maven { url 'https://maven.nucleoid.xyz' } // playerdataapi
+    maven { url 'https://maven.nucleoid.xyz' }
 }
 
 loom {
@@ -29,15 +35,12 @@ loom {
 //            sourceSet sourceSets.client
         }
     }
-
 }
 
 dependencies {
-    // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    // Fabric API. This is technically optional, but you probably want it anyway.
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     include(implementation("me.lucko:fabric-permissions-api:${project.permissions_api_version}"))
@@ -60,10 +63,12 @@ processResources {
     }
 }
 
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release.set(25)
+}
+
 java {
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
     withSourcesJar()
 
     sourceCompatibility = JavaVersion.VERSION_25
@@ -87,15 +92,201 @@ publishing {
     publications {
         create("mavenJava", MavenPublication) {
             artifactId = project.mod_id
+            groupId = project.maven_group
+            version = project.version
             from components.java
         }
     }
-
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
+        mavenLocal { }
+        maven {
+            name 'GitHub'
+            url "https://maven.pkg.github.com/${project.gh_owner}/${project.gh_repo}"
+            credentials {
+                username = getenv('GITHUB_ACTOR')
+                password = getenv('GITHUB_TOKEN')
+            }
+        }
     }
 }
+
+def static loadenv(String path = ".env") {
+    def env = [:]
+
+    def file = new File(path)
+    if (file.exists()) {
+        file.eachLine { line ->
+            def (name, value) = line.tokenize("=")
+            env[name.trim()] = value.trim()
+        }
+    }
+    for (el in System.getenv()) {
+        env[el.key] = el.value
+    }
+    return env
+}
+
+ext.cachedChangelog = null
+
+String readChangelogFromFile() {
+    if (ext.cachedChangelog != null) {
+        return ext.cachedChangelog
+    }
+
+    String changelogFilePath = './changelog.md'
+    var file = new File(changelogFilePath)
+    if (!file.exists()) {
+        logger.warn("'%s' not found.", changelogFilePath)
+        ext.cachedChangelog = "changelog file not found"
+        return ext.cachedChangelog
+    }
+
+    ext.cachedChangelog = file.getText('UTF-8')
+    return ext.cachedChangelog
+}
+
+String readLatestChangelogSection() {
+    String fullChangelog = readChangelogFromFile()
+
+    if (fullChangelog == "changelog file not found") {
+        return fullChangelog
+    }
+
+    String[] sections = fullChangelog.split('--- --- ---')
+    String mostRecentSection = sections[0].trim()
+
+    var dashIdx = project.mod_version.indexOf('-')
+    var plusIdx = project.mod_version.indexOf('+')
+    var indexOfMainVersionEnd
+        = dashIdx != -1 && plusIdx != -1 ? Math.min(dashIdx, plusIdx)
+        : dashIdx != -1                  ? dashIdx
+        : plusIdx != -1                  ? plusIdx
+        :                                  project.mod_version.length()
+
+    var mod_main_version = project.mod_version.substring(0, indexOfMainVersionEnd)
+
+    if (!mostRecentSection.contains("v$mod_main_version")) {
+        throw new RuntimeException("Changelog does not contain a section for the current version")
+    }
+
+    String suffix = """---
+
+If you discover any bugs, you can report them in the [Issue Tracker](https://github.com/${project.gh_owner}/${project.gh_repo}/issues).
+
+Additional conversation can be had in the [dev room discord](https://discord.jpcode.dev/kits).
+
+"""
+
+    return mostRecentSection + '\n' + suffix
+}
+
+// ModPublisher Configuration
+publisher {
+    apiKeys {
+        modrinth getenv("MODRINTH")
+        curseforge getenv("CURSEFORGE")
+        github getenv("GITHUB")
+    }
+
+    setDebug(false)
+
+    setCurseID(project.cf_project_id)
+    setModrinthID(project.mr_project_id)
+
+    setVersionType(project.version.contains('alpha') ? 'alpha'
+        : project.version.contains('beta') ? 'beta'
+        : 'release')
+
+    setChangelog(readLatestChangelogSection())
+    setProjectVersion(project.version as String)
+    setDisplayName(project.version as String)
+
+    setGameVersions(project.game_versions.split(',').collect { it.trim() })
+
+    setLoaders("fabric")
+    setCurseEnvironment("both")
+
+    setArtifact(jar)
+    setJavaVersions([JavaVersion.VERSION_25])
+
+    github {
+        repo("${project.gh_owner}/${project.gh_repo}")
+        tag(project.version as String)
+        target("26.2.x")
+    }
+
+    modrinthDepends {
+        if (project.hasProperty('mr_relations_required') && project.mr_relations_required?.trim()) {
+            project.mr_relations_required.split(',').each { dep ->
+                required dep.trim()
+            }
+        }
+        if (project.hasProperty('mr_relations_optional') && project.mr_relations_optional?.trim()) {
+            project.mr_relations_optional.split(',').each { dep ->
+                optional dep.trim()
+            }
+        }
+        if (project.hasProperty('mr_relations_embedded') && project.mr_relations_embedded?.trim()) {
+            project.mr_relations_embedded.split(',').each { dep ->
+                embedded dep.trim()
+            }
+        }
+        if (project.hasProperty('mr_relations_incompatible') && project.mr_relations_incompatible?.trim()) {
+            project.mr_relations_incompatible.split(',').each { dep ->
+                incompatible dep.trim()
+            }
+        }
+    }
+
+    curseDepends {
+        if (project.hasProperty('cf_relations_required') && project.cf_relations_required?.trim()) {
+            project.cf_relations_required.split(',').each { dep ->
+                required dep.trim()
+            }
+        }
+        if (project.hasProperty('cf_relations_optional') && project.cf_relations_optional?.trim()) {
+            project.cf_relations_optional.split(',').each { dep ->
+                optional dep.trim()
+            }
+        }
+        if (project.hasProperty('cf_relations_embedded') && project.cf_relations_embedded?.trim()) {
+            project.cf_relations_embedded.split(',').each { dep ->
+                embedded dep.trim()
+            }
+        }
+        if (project.hasProperty('cf_relations_incompatible') && project.cf_relations_incompatible?.trim()) {
+            project.cf_relations_incompatible.split(',').each { dep ->
+                incompatible dep.trim()
+            }
+        }
+    }
+}
+
+tasks.named('publishCurseforge').configure {
+    doFirst {
+        def key = getenv('CURSEFORGE')
+        if (key == 'NOT FOUND' || key.isEmpty()) {
+            throw new GradleException("CURSEFORGE API key is required for publishing to CurseForge")
+        }
+    }
+}
+
+tasks.named('publishModrinth').configure {
+    doFirst {
+        def key = getenv('MODRINTH')
+        if (key == 'NOT FOUND' || key.isEmpty()) {
+            throw new GradleException("MODRINTH API key is required for publishing to Modrinth")
+        }
+    }
+}
+
+tasks.named('publishGitHub').configure {
+    doFirst {
+        def key = getenv('GITHUB')
+        if (key == 'NOT FOUND' || key.isEmpty()) {
+            throw new GradleException("GITHUB API key is required for publishing to GitHub")
+        }
+    }
+}
+
+generatePomFileForMavenJavaPublication {}
