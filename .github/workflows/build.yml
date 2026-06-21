@@ -5,6 +5,7 @@ name: Build and Test with Gradle
 
 on:
   push:
+    branches: [ "1.21.*", "26.*" ]
     paths:
       - '**/src/**'
       - '**/build.gradle'
@@ -14,6 +15,7 @@ on:
       - LICENCE
 
   pull_request:
+    branches: [ "1.21.*", "26.*" ]
     paths:
       - '**/src/**'
       - '**/build.gradle'
