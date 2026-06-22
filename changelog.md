@@ -4,6 +4,8 @@
 
 - update to mc 26.2
 
+--- --- ---
+
 ## Kits `v1.8.0-mc1.21.11`
 
 ### Changes
@@ -13,7 +15,7 @@
 - update to Minecraft 1.21.11 (thanks @arnokeesman)
 - add datafixer for enchantments format change
 
----
+--- --- ---
 
 ## Kits `v1.7.1-mc1.21.7`
 
@@ -26,7 +28,7 @@
       affected with instructions on how to fix, if it can't be auto-fixed
 - assorted build/tooling/dependency/publishing updgrades
 
----
+--- --- ---
 
 ## Kits `v1.7.0-mc1.21.5`
 
