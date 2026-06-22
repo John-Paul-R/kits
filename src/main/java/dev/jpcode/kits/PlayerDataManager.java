@@ -4,12 +4,12 @@ import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.UUID;
 
-import net.minecraft.network.ClientConnection;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
+
+import net.minecraft.server.level.ServerPlayer;
 
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 import dev.jpcode.kits.events.PlayerConnectCallback;
-import dev.jpcode.kits.events.PlayerLeaveCallback;
 
 public class PlayerDataManager {
 
@@ -30,16 +30,17 @@ public class PlayerDataManager {
 
     static {
         PlayerConnectCallback.EVENT_HEAD.register(PlayerDataManager::onPlayerConnect);
-        PlayerConnectCallback.EVENT_RETURN.register(PlayerDataManager::onPlayerConnectTail);
-        PlayerLeaveCallback.EVENT.register(PlayerDataManager::onPlayerLeave);
+        ServerPlayerEvents.JOIN.register(PlayerDataManager::onPlayerConnectTail);
+        ServerPlayerEvents.LEAVE.register(PlayerDataManager::onPlayerLeave);
+        ServerPlayerEvents.COPY_FROM.register(PlayerDataManager::handlePlayerDataRespawnSync);
     }
 
-    public static void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player) {
+    public static void onPlayerConnect(ServerPlayer player) {
         PlayerKitData playerData = instance.addPlayer(player);
         ((ServerPlayerEntityAccess) player).kits$setPlayerData(playerData);
     }
 
-    private static void onPlayerConnectTail(ClientConnection connection, ServerPlayerEntity player) {
+    private static void onPlayerConnectTail(ServerPlayer player) {
         PlayerKitData playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
         // Detect if player has gotten starter kit
         if (!playerData.hasReceivedStarterKit()) {
@@ -58,14 +59,14 @@ public class PlayerDataManager {
         }
     }
 
-    public static void onPlayerLeave(ServerPlayerEntity player) {
+    public static void onPlayerLeave(ServerPlayer player) {
         // Auto-saving should be handled by WorldSaveHandlerMixin. (PlayerData saves when MC server saves players)
         instance.unloadPlayerData(player);
         ((ServerPlayerEntityAccess) player).kits$getPlayerData()
-            .save(Objects.requireNonNull(player.getEntityWorld().getServer()).getRegistryManager());
+            .save(Objects.requireNonNull(player.level().getServer()).registryAccess());
     }
 
-    public static void handlePlayerDataRespawnSync(ServerPlayerEntity oldPlayerEntity, ServerPlayerEntity newPlayerEntity) {
+    public static void handlePlayerDataRespawnSync(ServerPlayer oldPlayerEntity, ServerPlayer newPlayerEntity, boolean alive) {
         var oldPlayerAccess = ((ServerPlayerEntityAccess) oldPlayerEntity);
         var newPlayerAccess = ((ServerPlayerEntityAccess) newPlayerEntity);
 
@@ -74,23 +75,23 @@ public class PlayerDataManager {
         newPlayerAccess.kits$setPlayerData(playerData);
     }
 
-    public PlayerKitData addPlayer(ServerPlayerEntity player) {
+    public PlayerKitData addPlayer(ServerPlayer player) {
         PlayerKitData playerData = PlayerKitDataFactory.create(player);
-        dataMap.put(player.getUuid(), playerData);
+        dataMap.put(player.getUUID(), playerData);
         return playerData;
     }
 
-    public PlayerData getPlayerData(ServerPlayerEntity player) {
-        PlayerData playerData = dataMap.get(player.getUuid());
+    public PlayerData getPlayerData(ServerPlayer player) {
+        PlayerData playerData = dataMap.get(player.getUUID());
 
         if (playerData == null) {
-            throw new NullPointerException(String.format("dataMap returned null for player with uuid %s", player.getUuid().toString()));
+            throw new NullPointerException(String.format("dataMap returned null for player with uuid %s", player.getUUID().toString()));
         }
         return playerData;
     }
 
-    private void unloadPlayerData(ServerPlayerEntity player) {
-        this.dataMap.remove(player.getUuid());
+    private void unloadPlayerData(ServerPlayer player) {
+        this.dataMap.remove(player.getUUID());
     }
 
 }

@@ -3,29 +3,29 @@ package dev.jpcode.kits.command;
 import java.util.List;
 
 import eu.pb4.sgui.api.SlotHolder;
-import eu.pb4.sgui.api.gui.SimpleGuiBuilder;
+import eu.pb4.sgui.api.gui.SimpleGui;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.LoreComponent;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Util;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemLore;
 
 import dev.jpcode.kits.*;
 import dev.jpcode.kits.access.ServerPlayerEntityAccess;
 
 import static dev.jpcode.kits.KitsMod.CONFIG;
 
-public class KitsCommand implements Command<ServerCommandSource> {
+public class KitsCommand implements Command<CommandSourceStack> {
 
     private final KitSuggestions kitSuggestions;
     private final KitClaimCommand kitClaimCommand;
@@ -36,37 +36,27 @@ public class KitsCommand implements Command<ServerCommandSource> {
     }
 
     @Override
-    public int run(CommandContext<ServerCommandSource> ctx) throws CommandSyntaxException {
-        var player = ctx.getSource().getPlayerOrThrow();
+    public int run(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        var player = ctx.getSource().getPlayerOrException();
 
         openKitsScreen(player);
 
         return Command.SINGLE_SUCCESS;
     }
 
-    interface IScreen {
-        void paint(
-            ServerPlayerEntity player,
-            SimpleGuiBuilder simpleGuiBuilder,
-            SlotHolder gui
-        );
-        void open();
-    }
+    private void openKitsScreen(ServerPlayer player) {
+        var simpleGui = new SimpleGui(MenuType.GENERIC_9x3, player, false);
+        simpleGui.setLockPlayerInventory(true);
+        simpleGui.setTitle(Component.literal(CONFIG.kitsMenuTitle.getValue()));
 
-    private void openKitsScreen(ServerPlayerEntity player) {
-        var simpleGuiBuilder = new SimpleGuiBuilder(ScreenHandlerType.GENERIC_9X3, false);
-        simpleGuiBuilder.setLockPlayerInventory(true);
-        simpleGuiBuilder.setTitle(Text.literal(CONFIG.kitsMenuTitle.getValue()));
+        paintKitsScreen(player, simpleGui);
 
-        paintKitsScreen(player, simpleGuiBuilder);
-
-        var simpleGui = simpleGuiBuilder.build(player);
         simpleGui.open();
     }
 
-    private void paintKitsScreen(ServerPlayerEntity player, SlotHolder gui) {
+    private void paintKitsScreen(ServerPlayer player, SlotHolder gui) {
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        long currentTime = Util.getEpochTimeMs();
+        long currentTime = Util.getEpochMillis();
 
         var nonRingKitsForPlayer = kitSuggestions.getAllNonRingKitsForPlayer(player);
         int i = 0;
@@ -96,20 +86,19 @@ public class KitsCommand implements Command<ServerCommandSource> {
         }
     }
 
-    private void openKitRingScreen(ServerPlayerEntity player, String ringName, KitRing ring) {
-        var simpleGuiBuilder = new SimpleGuiBuilder(ScreenHandlerType.GENERIC_9X3, false);
-        simpleGuiBuilder.setLockPlayerInventory(true);
-        simpleGuiBuilder.setTitle(Text.literal(CONFIG.kitsMenuTitle.getValue()));
+    private void openKitRingScreen(ServerPlayer player, String ringName, KitRing ring) {
+        var simpleGui = new SimpleGui(MenuType.GENERIC_9x3, player, false);
+        simpleGui.setLockPlayerInventory(true);
+        simpleGui.setTitle(Component.literal(CONFIG.kitsMenuTitle.getValue()));
 
-        paintKitRingScreen(player, simpleGuiBuilder, ringName, ring);
+        paintKitRingScreen(player, simpleGui, ringName, ring);
 
-        var simpleGui = simpleGuiBuilder.build(player);
         simpleGui.open();
     }
 
-    private void paintKitRingScreen(ServerPlayerEntity player, SlotHolder gui, String ringName, KitRing ring) {
+    private void paintKitRingScreen(ServerPlayer player, SlotHolder gui, String ringName, KitRing ring) {
         var playerData = ((ServerPlayerEntityAccess) player).kits$getPlayerData();
-        long currentTime = Util.getEpochTimeMs();
+        long currentTime = Util.getEpochMillis();
 
         int i = 0;
         for (var kit : ring.kits().entrySet()) {
@@ -125,7 +114,6 @@ public class KitsCommand implements Command<ServerCommandSource> {
         }
     }
 
-
     private static ItemStack createKitItemStack(
         PlayerKitData playerData,
         KitsModStorage.KitRecord kit,
@@ -137,21 +125,21 @@ public class KitsCommand implements Command<ServerCommandSource> {
         var defaultItemStack = (
                 canUseKit
                     ? kit.kit().displayItem().orElse(Items.EMERALD_BLOCK)
-                    : Items.GRAY_CONCRETE_POWDER
-            ).getDefaultStack();
+                    : Items.CONCRETE_POWDER.gray()
+            ).getDefaultInstance();
 
         ItemStack newItemStack = defaultItemStack.copy();
-        newItemStack.set(DataComponentTypes.ITEM_NAME, Text.of(kit.kitName()));
+        newItemStack.set(DataComponents.ITEM_NAME, Component.nullToEmpty(kit.kitName()));
         if (kitCooldownRemainingMs > 0) {
             newItemStack.set(
-                DataComponentTypes.LORE,
-                new LoreComponent(List.of(
-                    Texts.join(
+                DataComponents.LORE,
+                new ItemLore(List.of(
+                    ComponentUtils.formatList(
                         List.of(
-                            Text.of("Available in"),
-                            Text.of(TimeUtil.formatTime(kitCooldownRemainingMs, 2))
+                            Component.nullToEmpty("Available in"),
+                            Component.nullToEmpty(TimeUtil.formatTime(kitCooldownRemainingMs, 2))
                         ),
-                        Text.of(" ")
+                        Component.nullToEmpty(" ")
                     )
                 ))
             );
@@ -170,22 +158,22 @@ public class KitsCommand implements Command<ServerCommandSource> {
 
         var defaultItemStack = (
             canUseKit
-                ? ring.displayItem().orElse(Items.LIME_CONCRETE)
-                : Items.GRAY_CONCRETE_POWDER
-        ).getDefaultStack();
+                ? ring.displayItem().orElse(Items.CONCRETE.lime())
+                : Items.CONCRETE_POWDER.gray()
+        ).getDefaultInstance();
 
         ItemStack newItemStack = defaultItemStack.copy();
-        newItemStack.set(DataComponentTypes.ITEM_NAME, Text.of(ringName));
+        newItemStack.set(DataComponents.ITEM_NAME, Component.nullToEmpty(ringName));
         if (kitCooldownRemainingMs > 0) {
             newItemStack.set(
-                DataComponentTypes.LORE,
-                new LoreComponent(List.of(
-                    Texts.join(
+                DataComponents.LORE,
+                new ItemLore(List.of(
+                    ComponentUtils.formatList(
                         List.of(
-                            Text.of("Available in"),
-                            Text.of(TimeUtil.formatTime(kitCooldownRemainingMs, 2))
+                            Component.nullToEmpty("Available in"),
+                            Component.nullToEmpty(TimeUtil.formatTime(kitCooldownRemainingMs, 2))
                         ),
-                        Text.of(" ")
+                        Component.nullToEmpty(" ")
                     )
                 ))
             );
