@@ -212,7 +212,7 @@ publisher {
     github {
         repo("${project.gh_owner}/${project.gh_repo}")
         tag(project.version as String)
-        target("26.2.x")
+        target("26.x")
     }
 
     modrinthDepends {
