@@ -1,7 +1,7 @@
 plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
-    id "com.hypherionmc.modutils.modpublisher" version "2.1.6"
+    id "com.hypherionmc.modutils.modpublisher" version "2.1.7"
 }
 
 ext.env = loadenv()
