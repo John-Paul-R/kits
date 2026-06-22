@@ -1,3 +1,9 @@
+## Kits `v1.9.0-mc26.2.0`
+
+### Changes
+
+- update to mc 26.2
+
 ## Kits `v1.8.0-mc1.21.11`
 
 ### Changes
