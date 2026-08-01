@@ -7,8 +7,8 @@ import java.util.Optional;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import net.minecraft.registry.Registries;
-import net.minecraft.text.TextCodecs;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.ComponentSerialization;
 
 import dev.jpcode.kits.Kit;
 import dev.jpcode.kits.KitRing;
@@ -32,7 +32,7 @@ public final class Codecs {
     public static final Codec<KitRing> RING_METADATA = RecordCodecBuilder.create(instance ->
         instance.group(
             // Display name
-            TextCodecs.CODEC
+            ComponentSerialization.CODEC
                 .optionalFieldOf(KitRing.StorageKey.DISPLAY_NAME)
                 .forGetter(ring -> Optional.ofNullable(ring.displayName())),
 
@@ -42,7 +42,7 @@ public final class Codecs {
                 .forGetter(KitRing::cooldownMs),
 
             // Display item
-            Registries.ITEM.getCodec()
+            BuiltInRegistries.ITEM.byNameCodec()
                 .optionalFieldOf(KitRing.StorageKey.DISPLAY_ITEM)
                 .forGetter(KitRing::displayItem),
 
@@ -69,7 +69,7 @@ public final class Codecs {
     public static final Codec<KitRing> RING_METADATA_WITH_KITS = RecordCodecBuilder.create(instance ->
         instance.group(
             // Display name
-            TextCodecs.CODEC
+            ComponentSerialization.CODEC
                 .optionalFieldOf(KitRing.StorageKey.DISPLAY_NAME)
                 .forGetter(ring -> Optional.ofNullable(ring.displayName())),
 
@@ -79,7 +79,7 @@ public final class Codecs {
                 .forGetter(KitRing::cooldownMs),
 
             // Display item
-            Registries.ITEM.getCodec()
+            BuiltInRegistries.ITEM.byNameCodec()
                 .optionalFieldOf(KitRing.StorageKey.DISPLAY_ITEM)
                 .forGetter(KitRing::displayItem),
 

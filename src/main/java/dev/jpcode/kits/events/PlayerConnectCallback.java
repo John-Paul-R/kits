@@ -1,7 +1,7 @@
 package dev.jpcode.kits.events;
 
-import net.minecraft.network.ClientConnection;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.network.Connection;
+import net.minecraft.server.level.ServerPlayer;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
@@ -20,5 +20,5 @@ public interface PlayerConnectCallback {
             }
         });
 
-    void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player);
+    void onPlayerConnect(Connection connection, ServerPlayer player);
 }

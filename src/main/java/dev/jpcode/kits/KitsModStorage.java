@@ -19,28 +19,26 @@ import org.jetbrains.annotations.Nullable;
 
 import com.mojang.serialization.JsonOps;
 
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtCrashException;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.registry.RegistryOps;
-import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.nbt.ReportedNbtException;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
-import net.minecraft.util.WorldSavePath;
+import net.minecraft.world.level.storage.LevelResource;
 
 import dev.jpcode.kits.config.KitsConfig;
 
 public class KitsModStorage {
     private final Logger logger;
     private final KitsConfig config;
-    private RegistryWrapper.WrapperLookup registries;
+    private HolderLookup.Provider registries;
 
     public final Map<String, Kit> KIT_MAP = new HashMap<>();
     public final Map<String, KitRing> KIT_RING_MAP = new HashMap<>();
 
-    /**
-     * all kits, regardless of whether they're in a ring or not
-     */
+    /** All kits, regardless of whether they're in a ring or not. */
     private final Map<String, KitRecord> ALL_KITS_MAP = new HashMap<>();
     private Kit starterKit;
 
@@ -64,9 +62,7 @@ public class KitsModStorage {
             return new KitRecord(ringName, ring, kitName, kit);
         }
 
-        /**
-         * used as the permission key for permissions mods and as the kitCooldownKey
-         */
+        /** Used as the permission key for permissions mods and as the kitCooldownKey. */
         public String permissionName() {
             return ringName == null ? kitName : ringName;
         }
@@ -80,7 +76,7 @@ public class KitsModStorage {
         }
     }
 
-    public void init(RegistryWrapper.WrapperLookup registries) {
+    public void init(HolderLookup.Provider registries) {
         this.registries = registries;
     }
 
@@ -213,7 +209,7 @@ public class KitsModStorage {
 
         var kit = KIT_MAP.remove(kitName);
         if (kit == null) {
-            throw new KitCommandSyntaxException(Text.literal(
+            throw new KitCommandSyntaxException(Component.literal(
                 "Kit '%s' not found".formatted(kitName)
             ));
         }
@@ -234,13 +230,15 @@ public class KitsModStorage {
             Files.move(sourceKitPath, destKitPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (NoSuchFileException e) {
             // If the .json file doesn't exist, save it fresh (also handles .nbt legacy case)
-            var kitJsonElement = Kit.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), kit).getOrThrow();
+            var kitJsonElement = Kit.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, registries), kit).getOrThrow();
             String kitJson = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(kitJsonElement);
             Files.writeString(destKitPath, kitJson);
             // Clean up old NBT file if it exists
             try {
                 Files.delete(KitsMod.getKitsDir().toPath().resolve(kitName + ".nbt"));
-            } catch (NoSuchFileException ign) {}
+            } catch (NoSuchFileException ign) {
+                // no handling
+            }
         }
     }
 
@@ -252,7 +250,7 @@ public class KitsModStorage {
         var removed = ring.removeKit(kitName);
 
         if (removed == null) {
-            throw new KitCommandSyntaxException(Text.literal(
+            throw new KitCommandSyntaxException(Component.literal(
                 "Kit '%s' not found in Ring '%s'".formatted(kitName, ringName)
             ));
         }
@@ -280,7 +278,7 @@ public class KitsModStorage {
     {
         var ring = KIT_RING_MAP.get(ringName);
         if (ring == null) {
-            throw new KitCommandSyntaxException(Text.literal(
+            throw new KitCommandSyntaxException(Component.literal(
                 "Kit Ring '%s' not found".formatted(ringName)
             ));
         }
@@ -318,7 +316,7 @@ public class KitsModStorage {
         KIT_RING_MAP.clear();
         ALL_KITS_MAP.clear();
         kitsDir = ensureKitsDir(server);
-        userDataDir = server.getSavePath(WorldSavePath.ROOT).resolve("kits_user_data");
+        userDataDir = server.getWorldPath(LevelResource.ROOT).resolve("kits_user_data");
 
         // if the dir was not just created, load all kits from dir.
         if (kitsDir.mkdirs()) {
@@ -347,7 +345,7 @@ public class KitsModStorage {
 
                     String metadataJson = Files.readString(metadataPath);
                     var metadataElement = JsonParser.parseString(metadataJson);
-                    var kitRing = KitRing.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), metadataElement).getOrThrow();
+                    var kitRing = KitRing.CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, registries), metadataElement).getOrThrow();
 
                     // Load all kit files from the ring directory
                     File[] ringKitFiles = file.listFiles((dir, name) -> name.endsWith(".json") && !name.equals("_ring.json"));
@@ -356,7 +354,7 @@ public class KitsModStorage {
                             String kitName = ringKitFile.getName().substring(0, ringKitFile.getName().length() - ".json".length());
                             String kitJson = Files.readString(ringKitFile.toPath());
                             var kitJsonElement = JsonParser.parseString(kitJson);
-                            var kit = Kit.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), kitJsonElement).getOrThrow();
+                            var kit = Kit.CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, registries), kitJsonElement).getOrThrow();
 
                             kit.setCooldownTrackerKey(ringName);
                             kitRing.addKit(kitName, kit);
@@ -379,7 +377,7 @@ public class KitsModStorage {
                     var jsonElement = JsonParser.parseString(json);
                     final String fileName = file.getName();
                     final String ringName = fileName.substring(0, fileName.length() - ".ring.json".length());
-                    final var kitRing = dev.jpcode.kits.codec.Codecs.RING_METADATA_WITH_KITS.parse(RegistryOps.of(JsonOps.INSTANCE, registries), jsonElement).getOrThrow();
+                    final var kitRing = dev.jpcode.kits.codec.Codecs.RING_METADATA_WITH_KITS.parse(RegistryOps.create(JsonOps.INSTANCE, registries), jsonElement).getOrThrow();
 
                     // Set cooldown tracker keys for all kits
                     kitRing.kits().forEach((k, kit) -> {
@@ -401,7 +399,7 @@ public class KitsModStorage {
             if (file.getPath().endsWith(".ring.nbt")) {
                 try {
                     logger.info("Loading legacy kit ring NBT file '{}' (will migrate to directory format)", file.getName());
-                    final NbtCompound kitRingNbt = NbtIo.read(file.toPath());
+                    final CompoundTag kitRingNbt = NbtIo.read(file.toPath());
                     final String fileName = file.getName();
                     final String ringName = fileName.substring(0, fileName.length() - ".ring.nbt".length());
 
@@ -411,7 +409,7 @@ public class KitsModStorage {
 
                     migrateRingToDirectoryFormat(ringName, kitRing);
 
-                } catch (IOException | IllegalStateException |NullPointerException | NbtCrashException e) {
+                } catch (IOException | IllegalStateException | NullPointerException | ReportedNbtException e) {
                     logger.error("Error while loading kit ring '{}'", file.getPath());
                     e.printStackTrace();
                 }
@@ -426,7 +424,7 @@ public class KitsModStorage {
                     var jsonElement = JsonParser.parseString(json);
                     String fileName = file.getName();
                     String kitName = fileName.substring(0, fileName.length() - ".json".length());
-                    var kit = Kit.CODEC.parse(RegistryOps.of(JsonOps.INSTANCE, registries), jsonElement).getOrThrow();
+                    var kit = Kit.CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, registries), jsonElement).getOrThrow();
                     kit.setCooldownTrackerKey(kitName);
                     KIT_MAP.put(kitName, kit);
 
@@ -447,7 +445,7 @@ public class KitsModStorage {
             if (file.getPath().endsWith(".nbt")) {
                 try {
                     logger.info("Loading kit '{}' (legacy NBT format)", file.getName());
-                    NbtCompound kitNbt = NbtIo.read(file.toPath());
+                    CompoundTag kitNbt = NbtIo.read(file.toPath());
                     String fileName = file.getName();
                     String kitName = fileName.substring(0, fileName.length() - 4);
 
@@ -459,7 +457,7 @@ public class KitsModStorage {
                     if (loadResult.wasUpgraded()) {
                         final String finalKitName = kitName;
                         final Kit finalKit = kit;
-                        net.minecraft.util.Util.getIoWorkerExecutor().execute(() -> {
+                        net.minecraft.util.Util.ioPool().execute(() -> {
                             try {
                                 logger.info("Migrating upgraded kit '{}' to JSON format", finalKitName);
                                 saveKit(finalKitName, finalKit);
@@ -477,7 +475,7 @@ public class KitsModStorage {
                         );
                     }
                     ALL_KITS_MAP.put(kitName, KitRecord.standaloneKit(kitName, kit));
-                } catch (IOException | IllegalStateException | NullPointerException | NbtCrashException e) {
+                } catch (IOException | IllegalStateException | NullPointerException | ReportedNbtException e) {
                     logger.error("Error while loading kit '{}'", file.getPath());
                     e.printStackTrace();
                 }
@@ -486,7 +484,7 @@ public class KitsModStorage {
     }
 
     private void migrateRingToDirectoryFormat(String ringName, KitRing kitRing) {
-        net.minecraft.util.Util.getIoWorkerExecutor().execute(() -> {
+        net.minecraft.util.Util.ioPool().execute(() -> {
             try {
                 logger.info("Migrating kit ring '{}' to directory format", ringName);
                 saveKitRing(ringName, kitRing);
@@ -510,8 +508,8 @@ public class KitsModStorage {
 
     private static File ensureKitsDir(MinecraftServer server)
     {
-        var buggedKitsDir = server.getRunDirectory().getFileName().resolve("config/kits").toFile();
-        var correctKitsDir = server.getRunDirectory().resolve("config/kits").toFile();
+        var buggedKitsDir = server.getServerDirectory().getFileName().resolve("config/kits").toFile();
+        var correctKitsDir = server.getServerDirectory().resolve("config/kits").toFile();
         boolean buggedKitsDirExists = buggedKitsDir.exists();
         boolean correctKitsDirExists = correctKitsDir.exists();
         // Handle an old path resolution bug by keeping the bugged one if it exists
@@ -549,7 +547,7 @@ public class KitsModStorage {
     }
 
     public void saveKit(String kitName, Kit kit) throws IOException {
-        var jsonElement = Kit.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), kit).getOrThrow();
+        var jsonElement = Kit.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, registries), kit).getOrThrow();
         String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(jsonElement);
 
         Path kitPath = KitsMod.getKitsDir().toPath().resolve(String.format("%s.json", kitName));
@@ -570,7 +568,7 @@ public class KitsModStorage {
         Files.createDirectories(ringDir);
 
         // Save ring metadata to _ring.json (kits field omitted when empty)
-        var jsonElement = KitRing.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), ring).getOrThrow();
+        var jsonElement = KitRing.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, registries), ring).getOrThrow();
         String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(jsonElement);
         Path metadataPath = ringDir.resolve("_ring.json");
         Files.writeString(metadataPath, json);
@@ -587,7 +585,7 @@ public class KitsModStorage {
             String kitName = entry.getKey();
             Kit kit = entry.getValue();
 
-            var kitJsonElement = Kit.CODEC.encodeStart(RegistryOps.of(JsonOps.INSTANCE, registries), kit).getOrThrow();
+            var kitJsonElement = Kit.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, registries), kit).getOrThrow();
             String kitJson = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(kitJsonElement);
             Path kitPath = ringDir.resolve(kitName + ".json");
             Files.writeString(kitPath, kitJson);
