@@ -12,6 +12,7 @@ import net.minecraft.ReportedException;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.Prediction;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.ItemStackWithSlot;
@@ -361,7 +362,7 @@ public class KitInventory implements Container {
 
     public void offerOrDropToPlayer(Inventory playerInventory) {
         for (int i = 0; i < this.getContainerSize(); ++i) {
-            playerInventory.placeItemBackInInventory(this.getItem(i).copy());
+            playerInventory.placeItemBackInInventory(this.getItem(i).copy(), Prediction.SERVER_ONLY);
         }
     }
 
