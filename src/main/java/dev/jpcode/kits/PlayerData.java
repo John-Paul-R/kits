@@ -3,42 +3,42 @@ package dev.jpcode.kits;
 import java.io.File;
 import java.io.IOException;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.world.PersistentState;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.saveddata.SavedData;
 
-public abstract class PlayerData extends PersistentState {
+public abstract class PlayerData extends SavedData {
 
-    private ServerPlayerEntity player;
+    private ServerPlayer player;
     private final File saveFile;
 
-    PlayerData(ServerPlayerEntity player, File saveFile) {
+    PlayerData(ServerPlayer player, File saveFile) {
         this.player = player;
         this.saveFile = saveFile;
     }
 
-    public void setPlayer(ServerPlayerEntity serverPlayerEntity) {
+    public void setPlayer(ServerPlayer serverPlayerEntity) {
         this.player = serverPlayerEntity;
     }
 
-    public ServerPlayerEntity getPlayer() {
+    public ServerPlayer getPlayer() {
         return this.player;
     }
 
-    public abstract void fromNbt(NbtCompound nbtCompound3);
+    public abstract void fromNbt(CompoundTag nbtCompound3);
 
-    public abstract NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup wrapperLookup);
+    public abstract CompoundTag writeNbt(CompoundTag nbt, HolderLookup.Provider wrapperLookup);
 
-    protected NbtCompound toNbt(RegistryWrapper.WrapperLookup wrapperLookup) {
-        var tag = new NbtCompound();
+    protected CompoundTag toNbt(HolderLookup.Provider wrapperLookup) {
+        var tag = new CompoundTag();
         this.writeNbt(tag, wrapperLookup);
         return tag;
     }
 
-    public void save(RegistryWrapper.WrapperLookup wrapperLookup) {
-        NbtCompound data = this.toNbt(wrapperLookup);
+    public void save(HolderLookup.Provider wrapperLookup) {
+        CompoundTag data = this.toNbt(wrapperLookup);
 
         try {
             NbtIo.writeCompressed(data, this.saveFile.toPath());

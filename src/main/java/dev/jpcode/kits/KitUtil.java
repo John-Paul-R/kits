@@ -3,24 +3,24 @@ package dev.jpcode.kits;
 import java.util.ArrayList;
 import java.util.Objects;
 
+import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public final class KitUtil {
 
     private KitUtil() {}
 
-    public static void giveKit(ServerPlayerEntity player, Kit kit) {
+    public static void giveKit(ServerPlayer player, Kit kit) {
         InventoryUtil.offerAllCopies(kit.inventory(), player.getInventory());
     }
 
-    public static void runCommands(ServerPlayerEntity player, ArrayList<String> commands) {
-        MinecraftServer server = player.getEntityWorld().getServer();
-        CommandManager commandManager = Objects.requireNonNull(server).getCommandManager();
+    public static void runCommands(ServerPlayer player, ArrayList<String> commands) {
+        MinecraftServer server = player.level().getServer();
+        Commands commandManager = Objects.requireNonNull(server).getCommands();
         for (String command : commands) {
             command = command.replace("@p", player.getName().getString());
-            commandManager.parseAndExecute(server.getCommandSource(), command);
+            commandManager.performPrefixedCommand(server.createCommandSourceStack(), command);
         }
     }
 }

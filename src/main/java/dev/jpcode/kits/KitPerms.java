@@ -2,7 +2,7 @@ package dev.jpcode.kits;
 
 import me.lucko.fabric.api.permissions.v0.Permissions;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
 public final class KitPerms {
 
@@ -11,11 +11,11 @@ public final class KitPerms {
     static void init() {
     }
 
-    public static boolean checkKit(ServerCommandSource source, String kitPermissionKey) {
+    public static boolean checkKit(CommandSourceStack source, String kitPermissionKey) {
         return Permissions.check(source, "kits.claim." + kitPermissionKey, 4);
     }
 
-    public static boolean checkKit(ServerCommandSource source, KitsModStorage.KitRecord kitRecord) {
+    public static boolean checkKit(CommandSourceStack source, KitsModStorage.KitRecord kitRecord) {
         return Permissions.check(source, "kits.claim." + kitRecord.permissionName(), 4);
     }
 }

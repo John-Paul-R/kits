@@ -49,7 +49,7 @@ public class KitsMod implements ModInitializer {
         PlayerDataManager.getInstance();
 
         ServerLifecycleEvents.SERVER_STARTING.register(s -> {
-            storage.init(s.getRegistryManager());
+            storage.init(s.registryAccess());
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(storage::reloadKits);

@@ -10,28 +10,28 @@ import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Dynamic;
 
-import net.minecraft.item.Item;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.registry.RegistryOps;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.text.Text;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.world.item.Item;
 
 import dev.jpcode.kits.datafixer.KitRingDataFixer;
 
 public class KitRing {
-    private Text displayName;
+    private Component displayName;
     private @Nullable Item displayItem;
     private final HashMap<String, Kit> kits;
     private final ArrayList<String> commands;
-    /** a negative cooldown yields a one-time use kit ring */
+    /** A negative cooldown yields a one-time use kit ring. */
     private final long cooldownMs;
-    /** if true, the first kit claimed from this ring becomes the only kit the player can claim from it thereafter */
+    /** If true, the first kit claimed from this ring becomes the only kit the player can claim from it thereafter. */
     private boolean permanentChoice;
 
     public KitRing(
-        Text displayName,
+        Component displayName,
         long cooldownMs,
         @Nullable Item displayItem,
         HashMap<String, Kit> kits,
@@ -47,7 +47,7 @@ public class KitRing {
     }
 
     public static KitRing createWithData(
-        Optional<Text> displayName,
+        Optional<Component> displayName,
         long cooldownMs,
         Optional<Item> displayItem,
         Optional<HashMap<String, Kit>> kits,
@@ -64,11 +64,11 @@ public class KitRing {
         );
     }
 
-    public Text displayName() {
+    public Component displayName() {
         return displayName;
     }
 
-    public void setDisplayName(Text displayName) {
+    public void setDisplayName(Component displayName) {
         this.displayName = displayName;
     }
 
@@ -84,12 +84,12 @@ public class KitRing {
         this.displayItem = displayItem;
     }
 
-    /** return is mutable internal ref */
+    /** Return is mutable internal ref. */
     public HashMap<String, Kit> kits() {
         return kits;
     }
 
-    /** return is mutable internal ref */
+    /** Return is mutable internal ref. */
     public ArrayList<String> commands() {
         return commands;
     }
@@ -139,18 +139,18 @@ public class KitRing {
         public static final String PERMANENT_CHOICE = "permanent_choice";
     }
 
-    public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {
+    public CompoundTag toNbt(HolderLookup.Provider registries) {
         return CODEC.encodeStart(NbtOps.INSTANCE, this)
             .getOrThrow()
             .asCompound()
             .orElseThrow();
     }
 
-    public record DataFixResult(NbtCompound nbt, boolean wasUpgraded) { }
+    public record DataFixResult(CompoundTag nbt, boolean wasUpgraded) { }
 
-    private static DataFixResult fixData(NbtCompound nbt) {
+    private static DataFixResult fixData(CompoundTag nbt) {
         // Apply datafixer to upgrade from schema 0/1 to schema 2
-        int currentVersion = nbt.getInt(SCHEMA_VERSION_KEY, 0);
+        int currentVersion = nbt.getIntOr(SCHEMA_VERSION_KEY, 0);
         boolean wasUpgraded = currentVersion < SCHEMA_VERSION;
 
         // Handle legacy negative cooldown fix
@@ -163,7 +163,7 @@ public class KitRing {
 
         nbt = _kitRingDataFixer.update(
             KitRingDataFixer.TYPE,
-            new Dynamic<NbtElement>(NbtOps.INSTANCE, nbt),
+            new Dynamic<Tag>(NbtOps.INSTANCE, nbt),
             currentVersion,
             SCHEMA_VERSION
         ).getValue().asCompound().orElseThrow();
@@ -175,13 +175,13 @@ public class KitRing {
 
     public static LoadResult fromNbtWithResult(
         String cooldownTrackerKey,
-        NbtCompound ringNbt,
-        RegistryWrapper.WrapperLookup registries
+        CompoundTag ringNbt,
+        HolderLookup.Provider registries
     ) {
         assert ringNbt != null;
         var fixResult = fixData(ringNbt);
 
-        KitRing ring = CODEC.parse(RegistryOps.of(NbtOps.INSTANCE, registries), fixResult.nbt)
+        KitRing ring = CODEC.parse(RegistryOps.create(NbtOps.INSTANCE, registries), fixResult.nbt)
             .getOrThrow();
 
         // Set cooldown tracker keys for all kits
@@ -194,8 +194,8 @@ public class KitRing {
 
     public static KitRing fromNbt(
         String cooldownTrackerKey,
-        NbtCompound ringNbt,
-        RegistryWrapper.WrapperLookup registries
+        CompoundTag ringNbt,
+        HolderLookup.Provider registries
     ) {
         return fromNbtWithResult(cooldownTrackerKey, ringNbt, registries).ring();
     }

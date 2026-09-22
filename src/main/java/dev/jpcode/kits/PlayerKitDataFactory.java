@@ -8,21 +8,21 @@ import java.nio.file.Paths;
 
 import org.apache.logging.log4j.Level;
 
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtSizeTracker;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public final class PlayerKitDataFactory {
 
     private PlayerKitDataFactory() {}
 
-    public static PlayerKitData create(ServerPlayerEntity player) {
+    public static PlayerKitData create(ServerPlayer player) {
         File saveFile = getPlayerDataFile(player);
         PlayerKitData pData = new PlayerKitData(player, saveFile);
         if (Files.exists(saveFile.toPath()) && saveFile.length() != 0) {
             try {
-                NbtCompound nbtCompound = NbtIo.readCompressed(saveFile.toPath(), NbtSizeTracker.ofUnlimitedBytes());
+                CompoundTag nbtCompound = NbtIo.readCompressed(saveFile.toPath(), NbtAccounter.unlimitedHeap());
                 pData.fromNbt(nbtCompound);
 
             } catch (IOException e) {
@@ -30,11 +30,11 @@ public final class PlayerKitDataFactory {
                 e.printStackTrace();
             }
         }
-        pData.markDirty();
+        pData.setDirty();
         return pData;
     }
 
-    private static File getPlayerDataFile(ServerPlayerEntity player) {
+    private static File getPlayerDataFile(ServerPlayer player) {
         Path dataDirectoryPath;
         File playerDataFile = null;
         try {
@@ -44,7 +44,7 @@ public final class PlayerKitDataFactory {
                 dataDirectoryPath = Files.createDirectories(Paths.get("./world/modplayerdata/"));
                 KitsMod.LOGGER.log(Level.WARN, "Session save path could not be found. Defaulting to ./world/modplayerdata");
             }
-            playerDataFile = dataDirectoryPath.resolve(player.getUuidAsString() + ".nbt").toFile();
+            playerDataFile = dataDirectoryPath.resolve(player.getStringUUID() + ".nbt").toFile();
             playerDataFile.createNewFile();
         } catch (IOException e) {
             e.printStackTrace();

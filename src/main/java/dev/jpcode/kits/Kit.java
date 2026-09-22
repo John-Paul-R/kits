@@ -11,15 +11,15 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import net.minecraft.inventory.StackWithSlot;
-import net.minecraft.item.Item;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryOps;
-import net.minecraft.registry.RegistryWrapper;
-import net.minecraft.util.ErrorReporter;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.ItemStackWithSlot;
+import net.minecraft.world.item.Item;
 
 import dev.jpcode.kits.datafixer.KitDataFixer;
 
@@ -55,7 +55,7 @@ public class Kit {
 
     // CODEC constructor
     private Kit(
-        List<StackWithSlot> inventoryData,
+        List<ItemStackWithSlot> inventoryData,
         long cooldownMs,
         Optional<Item> displayItem,
         List<String> commands
@@ -107,17 +107,17 @@ public class Kit {
     public static Kit createWithData(
         long cooldownMs,
         Optional<Item> displayItem,
-        List<StackWithSlot> inventoryData,
+        List<ItemStackWithSlot> inventoryData,
         List<String> commands
     ) {
         Kit kit = new Kit(inventoryData, cooldownMs, displayItem, commands);
 
         // Populate inventory from codec data
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
-        try (ErrorReporter.Logging logging = new ErrorReporter.Logging(() -> "Kit.createWithData", logger)) {
-            for (StackWithSlot stackWithSlot : inventoryData) {
-                if (stackWithSlot.isValidSlot(kit.inventory.main.size())) {
-                    kit.inventory.setStack(stackWithSlot.slot(), stackWithSlot.stack());
+        try (ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(() -> "Kit.createWithData", logger)) {
+            for (ItemStackWithSlot stackWithSlot : inventoryData) {
+                if (stackWithSlot.isValidInContainer(kit.inventory.main.size())) {
+                    kit.inventory.setItem(stackWithSlot.slot(), stackWithSlot.stack());
                 }
             }
         }
@@ -129,12 +129,12 @@ public class Kit {
         this.cooldownTrackerKey = cooldownTrackerKey;
     }
 
-    public List<StackWithSlot> getInventoryData() {
-        ArrayList<StackWithSlot> list = new ArrayList<>();
+    public List<ItemStackWithSlot> getInventoryData() {
+        ArrayList<ItemStackWithSlot> list = new ArrayList<>();
         for (int i = 0; i < this.inventory.main.size(); ++i) {
-            net.minecraft.item.ItemStack itemStack = this.inventory.main.get(i);
+            net.minecraft.world.item.ItemStack itemStack = this.inventory.main.get(i);
             if (!itemStack.isEmpty()) {
-                list.add(new StackWithSlot(i, itemStack));
+                list.add(new ItemStackWithSlot(i, itemStack));
             }
         }
         return list;
@@ -148,12 +148,12 @@ public class Kit {
                 .forGetter(Kit::cooldownMs),
 
             // Display item
-            Registries.ITEM.getCodec()
+            BuiltInRegistries.ITEM.byNameCodec()
                 .optionalFieldOf(StorageKey.DISPLAY_ITEM)
                 .forGetter(Kit::displayItem),
 
             // Inventory
-            StackWithSlot.CODEC.listOf()
+            ItemStackWithSlot.CODEC.listOf()
                 .optionalFieldOf(StorageKey.INVENTORY, List.of())
                 .forGetter(Kit::getInventoryData),
 
@@ -181,18 +181,18 @@ public class Kit {
         public static final String COMMANDS = "commands";
     }
 
-    public NbtCompound toNbt(RegistryWrapper.WrapperLookup registries) {
+    public CompoundTag toNbt(HolderLookup.Provider registries) {
         return CODEC.encodeStart(NbtOps.INSTANCE, this)
             .getOrThrow()
             .asCompound()
             .orElseThrow();
     }
 
-    public record DataFixResult(NbtCompound nbt, boolean wasUpgraded) { }
+    public record DataFixResult(CompoundTag nbt, boolean wasUpgraded) { }
 
-    private static DataFixResult fixData(NbtCompound nbt) {
+    private static DataFixResult fixData(CompoundTag nbt) {
         // Apply datafixer to upgrade from schema 0/1 to schema 2
-        int currentVersion = nbt.getInt(SCHEMA_VERSION_KEY, 0);
+        int currentVersion = nbt.getIntOr(SCHEMA_VERSION_KEY, 0);
         boolean wasUpgraded = currentVersion < SCHEMA_VERSION;
 
         // Handle legacy negative cooldown fix
@@ -205,7 +205,7 @@ public class Kit {
 
         nbt = _kitDataFixer.update(
             KitDataFixer.TYPE,
-            new Dynamic<NbtElement>(NbtOps.INSTANCE, nbt),
+            new Dynamic<Tag>(NbtOps.INSTANCE, nbt),
             currentVersion,
             SCHEMA_VERSION
         ).getValue().asCompound().orElseThrow();
@@ -217,13 +217,13 @@ public class Kit {
 
     public static LoadResult fromNbtWithResult(
         String cooldownTrackerKey,
-        NbtCompound kitNbt,
-        RegistryWrapper.WrapperLookup registries
+        CompoundTag kitNbt,
+        HolderLookup.Provider registries
     ) {
         assert kitNbt != null;
         var fixResult = fixData(kitNbt);
 
-        Kit kit = CODEC.parse(RegistryOps.of(NbtOps.INSTANCE, registries), fixResult.nbt)
+        Kit kit = CODEC.parse(RegistryOps.create(NbtOps.INSTANCE, registries), fixResult.nbt)
             .getOrThrow();
 
         kit.setCooldownTrackerKey(cooldownTrackerKey);
@@ -233,8 +233,8 @@ public class Kit {
 
     public static Kit fromNbt(
         String cooldownTrackerKey,
-        NbtCompound kitNbt,
-        RegistryWrapper.WrapperLookup registries
+        CompoundTag kitNbt,
+        HolderLookup.Provider registries
     ) {
         return fromNbtWithResult(cooldownTrackerKey, kitNbt, registries).kit();
     }
