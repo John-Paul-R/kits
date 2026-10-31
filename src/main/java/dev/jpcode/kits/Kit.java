@@ -116,7 +116,7 @@ public class Kit {
         org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kit.class);
         try (ProblemReporter.ScopedCollector logging = new ProblemReporter.ScopedCollector(() -> "Kit.createWithData", logger)) {
             for (ItemStackWithSlot stackWithSlot : inventoryData) {
-                if (stackWithSlot.isValidInContainer(kit.inventory.main.size())) {
+                if (stackWithSlot.isValidInContainer(kit.inventory.getContainerSize())) {
                     kit.inventory.setItem(stackWithSlot.slot(), stackWithSlot.stack());
                 }
             }
@@ -131,8 +131,8 @@ public class Kit {
 
     public List<ItemStackWithSlot> getInventoryData() {
         ArrayList<ItemStackWithSlot> list = new ArrayList<>();
-        for (int i = 0; i < this.inventory.main.size(); ++i) {
-            net.minecraft.world.item.ItemStack itemStack = this.inventory.main.get(i);
+        for (int i = 0; i < this.inventory.getContainerSize(); ++i) {
+            net.minecraft.world.item.ItemStack itemStack = this.inventory.getItem(i);
             if (!itemStack.isEmpty()) {
                 list.add(new ItemStackWithSlot(i, itemStack));
             }
